@@ -330,3 +330,18 @@ https://docs.omniverse.nvidia.com/isaacsim/latest/introductory_tutorials/tutoria
     ```isaac_sim-2023.1.1\standalone_examples\api\omni.isaac.core\add_cubes.py```
 
 Su windows, eseguiti con isaac_sim-2023.1.1\python.bat ci mettono 10 minuti per avviarsi. L'esecuzione con il debugger non funziona.
+
+## Estensione REPL
+REPL è una shell che esegue frammenti di codice Python. Funziona solo su Linux e si usa nel seguente modo:
+1. Un'istanza di Isaac deve essere già in esecuzione
+2. Windows > Extensions, cerco Isaac Sim REPL e la abilito, selezionando anche Autoload.
+3. Apro un terminale ed eseguo ```telnet localhost 8223```. Si apre una shell python che esegue codice una linea alla volta.
+4. Per uscire Ctrl+D.
+
+## Isaac Sim Core APIs
+Le core APis semplificano molte delle operazioni che possono essere fatte sul simulatore. 
+
+## Video: can we simulate a real robot?
+
+1. Lui utilizza sempre il python fornito da Isaac per eseguire il codice.
+2. Per risolvere il problema del riavvio, semplicemente esegue il codice principale solo una volta (modulo action) e passa dei parametri tramite scrittura su file.
