@@ -313,7 +313,7 @@ Esistono due modi di eseguire scripting diretto:
 1. Tramite estensioni (non creano una nuova istanza del simulatore)
 2. App standalone (creano necessariamente una nuova istanza del simulatore)
 
-Per eseguire il codice Python con le librerie Isaac bisogna utilizzare l'environment fornito da loro. Ciò può essere fatto eseguendo il python.sh (.bat in windows) e passando come argomento il percorso del file python. 
+Per eseguire il codice Python con le librerie Isaac bisogna utilizzare l'environment fornito da loro. Ciò può essere fatto eseguendo il python.sh (.bat in windows) e passando come argomento il percorso del file python. In linux ho creato il comando isaac_py che esegue il python di Isaac. Per aggiungere dei moduli a quel python credo si possano inserire all'interno del requirements.txt.
 
 Per il debugging da VSCode è possibile aprire direttamente la cartella di Isaac (percorso ```~/.local/ov/pkg/Isaac_sim ...``` in linux,```C:\Users\danyb\AppData\Local\ov\pkg\isaac_sim-2023.1.1``` in windows ) da vscode ed eseguire il codice con il debugger "Attach ...".
 
@@ -346,4 +346,36 @@ Le core APis semplificano molte delle operazioni che possono essere fatte sul si
 1. Lui utilizza sempre il python fornito da Isaac per eseguire il codice.
 2. Per risolvere il problema del riavvio, semplicemente esegue il codice principale solo una volta (modulo action) e passa dei parametri tramite scrittura su file.
 
-Prova
+Ho seguito il metodo che utilizza lui sul robot jetbot e funziona. Adesso devo prendere i dati della camera.
+
+
+### Lettura della camera
+
+```python
+    from omni.isaac.sensor import Camera
+    from PIL import Image
+
+    camera = Camera(prim_path="/World/jetbot/chassis/rgb_camera/jetbot_camera")
+    camera.initialize()
+    rgba_array = camera.get_current_frame()["rgba"]
+    image = Image.fromarray(rgba_array.astype('uint8'))
+    image.show()
+```
+Con un apriltag davanti, ecco il primo risultato:
+
+![alt text](image_apriltag_jetbot.png)
+
+
+Posso impostare una risoluzione a piacere, ottenendo un'immagine decisamente migliore.
+
+```python
+    camera = Camera(prim_path="/World/jetbot/chassis/rgb_camera/jetbot_camera", resolution=(1024, 1024))
+```
+
+![alt text](image_apriltag_jetbot_1024.png)
+
+### Caricamento scena
+
+Basandomi su https://forums.developer.nvidia.com/t/import-usd-scene-in-python/244651/4
+
+Ho scritto il codice per il caricamento di una scena e per il recupero degli elementi dalla stessa (test_2). Ho notato inoltre un netto miglioramento nella velocità di caricamento della scena, forse dovuto ai parametri di CONFIG.
