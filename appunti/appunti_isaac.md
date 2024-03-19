@@ -346,10 +346,10 @@ Le core APis semplificano molte delle operazioni che possono essere fatte sul si
 1. Lui utilizza sempre il python fornito da Isaac per eseguire il codice.
 2. Per risolvere il problema del riavvio, semplicemente esegue il codice principale solo una volta (modulo action) e passa dei parametri tramite scrittura su file.
 
-Ho seguito il metodo che utilizza lui sul robot jetbot e funziona. Adesso devo prendere i dati della camera.
+Ho seguito il metodo che utilizza lui sul robot jetbot e funziona. Adesso devo prendere i dati della camera. Per eseguire i vari programmi test **utilizzo il python fornito da Isaac (in linux il mio comando isaac_py)**.
 
 
-### Lettura della camera
+## Lettura della camera
 
 ```python
     from omni.isaac.sensor import Camera
@@ -378,7 +378,7 @@ Documentazione api camera:
 https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.sensor/docs/index.html#module-omni.isaac.sensor.scripts.camera
 
 
-### Caricamento scena
+## Caricamento scena
 
 Basandomi su https://forums.developer.nvidia.com/t/import-usd-scene-in-python/244651/4
 
