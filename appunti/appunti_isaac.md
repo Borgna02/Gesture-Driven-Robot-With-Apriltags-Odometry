@@ -374,8 +374,14 @@ Posso impostare una risoluzione a piacere, ottenendo un'immagine decisamente mig
 
 ![alt text](image_apriltag_jetbot_1024.png)
 
+Documentazione api camera:
+https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.sensor/docs/index.html#module-omni.isaac.sensor.scripts.camera
+
+
 ### Caricamento scena
 
 Basandomi su https://forums.developer.nvidia.com/t/import-usd-scene-in-python/244651/4
 
 Ho scritto il codice per il caricamento di una scena e per il recupero degli elementi dalla stessa (test_2). Ho notato inoltre un netto miglioramento nella velocità di caricamento della scena, forse dovuto ai parametri di CONFIG.
+
+In questo modo posso costruire manualmente una qualsiasi scena e quindi caricarla tramite lo script python.
