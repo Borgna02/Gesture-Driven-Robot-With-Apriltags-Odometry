@@ -308,3 +308,25 @@ Ho provato ad eseguire script esterni al simulatore che si interfacciano con ess
 
 https://docs.omniverse.nvidia.com/dev-guide/latest/dev_guide/develop/develop.html
 https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html
+
+Esistono due modi di eseguire scripting diretto: 
+1. Tramite estensioni (non creano una nuova istanza del simulatore)
+2. App standalone (creano necessariamente una nuova istanza del simulatore)
+
+Per eseguire il codice Python con le librerie Isaac bisogna utilizzare l'environment fornito da loro. Ciò può essere fatto eseguendo il python.sh (.bat in windows) e passando come argomento il percorso del file python. 
+
+Per il debugging da VSCode è possibile aprire direttamente la cartella di Isaac (percorso ```~/.local/ov/pkg/Isaac_sim ...``` in linux,```C:\Users\danyb\AppData\Local\ov\pkg\isaac_sim-2023.1.1``` in windows ) da vscode ed eseguire il codice con il debugger "Attach ...".
+
+## Testing Extensions with Python
+https://docs.omniverse.nvidia.com/kit/docs/kit-manual/latest/guide/testing_exts_python.html
+
+## Isaac Sim Workflows
+https://docs.omniverse.nvidia.com/isaacsim/latest/introductory_tutorials/tutorial_intro_workflows.html
+
+## Esempi interessanti
+* Braccio che segue il cubo (standalone):   
+    ```isaac_sim-2023.1.1\standalone_examples\api\omni.isaac.franka\follow_target_with_rmpflow.py```
+* Add cubes (standalone):
+    ```isaac_sim-2023.1.1\standalone_examples\api\omni.isaac.core\add_cubes.py```
+
+Su windows, eseguiti con isaac_sim-2023.1.1\python.bat ci mettono 10 minuti per avviarsi. L'esecuzione con il debugger non funziona.
