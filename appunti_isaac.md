@@ -345,3 +345,5 @@ Le core APis semplificano molte delle operazioni che possono essere fatte sul si
 
 1. Lui utilizza sempre il python fornito da Isaac per eseguire il codice.
 2. Per risolvere il problema del riavvio, semplicemente esegue il codice principale solo una volta (modulo action) e passa dei parametri tramite scrittura su file.
+
+Prova
