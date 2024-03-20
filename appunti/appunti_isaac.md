@@ -385,3 +385,50 @@ Basandomi su https://forums.developer.nvidia.com/t/import-usd-scene-in-python/24
 Ho scritto il codice per il caricamento di una scena e per il recupero degli elementi dalla stessa (test_2). Ho notato inoltre un netto miglioramento nella velocità di caricamento della scena, forse dovuto ai parametri di CONFIG.
 
 In questo modo posso costruire manualmente una qualsiasi scena e quindi caricarla tramite lo script python.
+
+## Inclusione mosquitto
+
+Per installare pacchetti aggiuntivi si può usare il comando ```./python.sh -m pip install name_of_package_here```.
+
+Prima di eseguire questo, ho aggiornato pip con ```isaac_py -m pip install --upgrade pip```.
+
+### Esempio di navigazione con tasti della tastiera
+
+1. ```pip install pynput```
+
+2. ```python
+        from pynput import keyboard
+
+        def on_press(key):
+            try:
+                if key == keyboard.Key.up:
+                    print("Freccia su premuta")
+                    # Esegui l'operazione per la freccia su
+                elif key == keyboard.Key.down:
+                    print("Freccia giù premuta")
+                    # Esegui l'operazione per la freccia giù
+                elif key == keyboard.Key.left:
+                    print("Freccia sinistra premuta")
+                    # Esegui l'operazione per la freccia sinistra
+                elif key == keyboard.Key.right:
+                    print("Freccia destra premuta")
+                    # Esegui l'operazione per la freccia destra
+            except AttributeError:
+                pass
+
+        # Registra la funzione on_press come callback per i press dei tasti
+        with keyboard.Listener(on_press=on_press) as listener:
+            listener.join()
+
+
+    ```
+
+### Installazione di mosquitto in locale
+
+1. ```sudo apt-get install mosquitto```
+1. ```sudo apt install mosquitto-clients```
+2. ```mosquitto``` per avviarlo.
+3. ```sudo systemctl stop mosquitto``` per interromperlo
+
+In questo modo il broker sarà in ascolto sull'indirizzo localhost e sulla porta 1883. Per vedere se c'è un processo già sulla porta 1883 si può eseguire ```sudo lsof -i :1883```.
+
