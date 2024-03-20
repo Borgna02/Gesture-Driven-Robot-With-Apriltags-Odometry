@@ -432,3 +432,12 @@ Prima di eseguire questo, ho aggiornato pip con ```isaac_py -m pip install --upg
 
 In questo modo il broker sarà in ascolto sull'indirizzo localhost e sulla porta 1883. Per vedere se c'è un processo già sulla porta 1883 si può eseguire ```sudo lsof -i :1883```.
 
+### Lentezza dell'esecuzioned elle app standalone
+
+https://forums.developer.nvidia.com/t/faster-standalone-application-start-loading/202403
+
+La lentezza può essere ridotta se si utilizza la cache, attivabile dal launcher di Omniverse.
+
+### Lettura apriltags nell'immagine
+
+1. Installo opencv con ```isaac_py -m pip install opencv-python```

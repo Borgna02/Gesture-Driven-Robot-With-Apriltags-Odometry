@@ -4,6 +4,7 @@ import omni
 from time import sleep
 from PIL import Image
 import paho.mqtt.client as mqtt
+import cv2
 
 
 class Constants:
@@ -23,7 +24,20 @@ from omni.isaac.core.utils.stage import is_stage_loading
 from omni.isaac.sensor import Camera
 from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
 
-class SimHandler():
+class ImageUtils:
+    def array_to_image(array):
+        # Creazione di un'immagine vuota di dimensione 1024x1024 con 4 canali (RGBA)
+        image = np.zeros((1024, 1024, 4), dtype=np.uint8)
+
+        # Assegnazione dei valori RGBA all'immagine
+        image[:, :, 0] = array[:, :, 0]  # Red
+        image[:, :, 1] = array[:, :, 1]  # Green
+        image[:, :, 2] = array[:, :, 2]  # Blue
+        image[:, :, 3] = array[:, :, 3]  # Alpha
+
+        return image
+
+class SimHandler:
     
     def __init__(self, simulation: SimulationApp):
         self.sim = simulation
@@ -71,6 +85,7 @@ class MyJetbot:
         self.controller = DifferentialController(name="simple_control", wheel_radius=0.03, wheel_base=0.1125)
         self.camera = Camera(prim_path=Constants.CAMERA_PRIM_PATH, resolution=(1024, 1024))
         self.camera.initialize()
+        print(self.camera.get_aspect_ratio())
         
     def do_action(self, message):
         velvec = None
@@ -88,13 +103,14 @@ class MyJetbot:
         
     def read_camera(self):
         rgba_array = self.camera.get_current_frame()["rgba"]
-        image = Image.fromarray(rgba_array.astype('uint8'))
-        image.save(Constants.IMAGE_PATH)
+        image = ImageUtils.array_to_image(rgba_array)
+        # Visualizzazione dell'immagine
+        cv2.imwrite(Constants.IMAGE_PATH, image)
 
 class MqttManager:
     
     def __init__(self, jetbot: MyJetbot, broker_address="localhost", port=1883):
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.connect(broker_address, port)
         self.client.on_message = self.on_message
         self.client.subscribe("command")
@@ -114,6 +130,7 @@ class MqttManager:
             self.client.loop(timeout=0.01)  # Controlla i messaggi per un breve periodo di tempo
             self.is_reading = False
 
+# class AprilTagsHandler:
 
 if __name__ == "__main__":
     sim_handler = SimHandler(sim)
