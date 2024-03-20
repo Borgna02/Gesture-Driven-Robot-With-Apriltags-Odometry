@@ -11,9 +11,34 @@ class Constants:
     CONFIG = {"width": 1280, "height": 720, "sync_loads": True, "headless": False, "renderer": "RayTracedLighting"}
     SCENE_PATH = "src/scene_jetbot_apriltag.usd"
     JETSON_PRIM_PATH = "/World/jetbot"
-    CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_camera"
+    CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
     COMMAND_MANUAL_PATH = "src/test_3/velvec.npy"
     IMAGE_PATH = "src/test_3/test.png"
+
+class Instrinsics:
+    def __init__(self, camera):
+        width, height = camera.get_resolution() 
+        focal_length = camera.get_focal_length()
+        horiz_aperture = camera.get_horizontal_aperture()
+        vert_aperture = height/width * horiz_aperture
+
+        self.fx = width * focal_length / horiz_aperture
+        self.fy = height * focal_length / vert_aperture
+        self.cx = width/2
+        self.cy = height/2
+
+# fx: 380.6691503796936, fy: 380.6691503796936, cx: 512.0, cy: 512.0
+
+
+        # self.cx = camera.get_resolution()[0]/2
+        # self.f = self.cx / np.tan(camera.get_vertical_fov() / 2)
+        # self.cy = camera.get_resolution()[1]/2
+        
+# f: 380.6691503796936, cx: 512.0, cy: 512.0
+
+# Viene uguale con entrambi i metodi
+
+
 
 sim = SimulationApp(launch_config=Constants.CONFIG)
 
@@ -85,7 +110,8 @@ class MyJetbot:
         self.controller = DifferentialController(name="simple_control", wheel_radius=0.03, wheel_base=0.1125)
         self.camera = Camera(prim_path=Constants.CAMERA_PRIM_PATH, resolution=(1024, 1024))
         self.camera.initialize()
-        print(self.camera.get_aspect_ratio())
+        self.intrinsics = Instrinsics(self.camera)
+        print(f"fx: {self.intrinsics.fx}, fy: {self.intrinsics.fy}, cx: {self.intrinsics.cx}, cy: {self.intrinsics.cy}")
         
     def do_action(self, message):
         velvec = None

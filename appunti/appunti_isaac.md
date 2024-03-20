@@ -441,3 +441,5 @@ La lentezza può essere ridotta se si utilizza la cache, attivabile dal launcher
 ### Lettura apriltags nell'immagine
 
 1. Installo opencv con ```isaac_py -m pip install opencv-python```
+2. Ho modificato la camera predefinita del jetbot perché l'immagine era rettangolare e stretta. Ho incluso una nuova camera ed ho regolato i parametri per adattarli alle mie necessità.
+3. Installo pyapriltags https://pypi.org/project/pyapriltags/
