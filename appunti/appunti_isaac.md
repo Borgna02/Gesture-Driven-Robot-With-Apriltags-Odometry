@@ -443,3 +443,86 @@ La lentezza può essere ridotta se si utilizza la cache, attivabile dal launcher
 1. Installo opencv con ```isaac_py -m pip install opencv-python```
 2. Ho modificato la camera predefinita del jetbot perché l'immagine era rettangolare e stretta. Ho incluso una nuova camera ed ho regolato i parametri per adattarli alle mie necessità.
 3. Installo pyapriltags https://pypi.org/project/pyapriltags/
+
+Per leggere in modo accurato gli apriltags ho bisogno degli intrinsics della videocamera, ovvero parametri interni quali lunghezza focale e centro ottico. 
+
+Un metodo che ho utilizzato per calcolarli è quello nel seguente link:
+
+https://forums.developer.nvidia.com/t/change-intrinsic-camera-parameters/180309/4
+
+
+Devo eseguire dei test per capire se la distanza è calcolata correttamente.
+
+
+#### Calibrazione con scacchiera
+
+Per un risultato perfetto, l'ideale è la calibrazione con la scacchiera. Ho inserito una scacchiera all'interno della scena con la seguente procedura:
+1. Creo un plane
+2. Creo un Material > OmniPBR
+3. Tra le proprietà del material, assegno ad Albedo map il file dell'immagine
+4. Assegno al plane il material creato.
+
+A questo punto scatto diverse immagini della scacchiera tramite un semplice programma.
+
+### Recupero della posizione di un prim nella scena
+
+```python
+    stage = omni.usd.get_context().get_stage()
+    prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
+    matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
+    translate: Gf.Vec3d = matrix.ExtractTranslation()
+    print(f"Camera pos: {translate}")
+```
+
+
+# Riassunto calibrazione videocamera:
+
+fonti: 
+* https://docs.nvidia.com/isaac/archive/2020.2/packages/fiducials/doc/apriltags.html
+* https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
+
+La libreria apriltag, per il calcolo della distanza del tag dalla camera e del suo orientamento, richiede i valori cosiddetti intrinsics della videocamera, ovvero:
+* Camera focal length in X e Y in pixel per radianti.
+* Centro focale (Camera principal points) in X e Y.
+* Lato del tag (quadrato) in metri.
+
+Tali intrinsics, come si può intuire dal nome, sono intrinsechi della fotocamera e possono quindi essere ricavati solo da essa. Se tali valori non sono noti, possono essere ricavati tramite l'ausilio di una scacchiera.
+
+https://nikatsanka.github.io/camera-calibration-using-opencv-and-python.html
+
+Tale procedimento consiste nell'inserire una scacchiera all'interno della scena, quindi catturare dei frame in cui la scacchiera si trova in diverse posizioni e darli "in pasto" all'algoritmo. 
+
+![alt text](image-7.png)
+
+Quest'ultimo, tramite appositi metodi della libreria OpenCV, calcola l'errore che c'è nelle forme della scacchiera che dovrebbero essere quadrate, quindi ricava tali valori. 
+
+
+![alt text](image-6.png)
+
+Nel nostro caso, gli intrinsics sono:
+
+$$camera\_matrix = \begin{bmatrix}
+433.028 & 0.0 & 541.725 \\
+0.0 & 415.378 & 659.105 \\
+0.0 & 0.0 & 1.0 \\
+\end{bmatrix}
+$$
+
+A questo punto posso utilizzare tali valori nella detection.
+
+
+**Sembra che non funzioni bene neanche con questi valori**
+
+## Creazione camera definitiva
+Dato che la creazione della camera tramite create > camera dava un risultato strano, perché l'immagine risultava schiacciata, ho trovato un altro metodo per crearla. Tale metodo consiste nel cliccare su 
+
+![alt text](image-8.png)
+
+e quindi 
+
+![alt text](image-9.png)
+
+Posizionando la visuale sul punto in cui si vuole creare la camera e poi eseguendo tale procedimento, viene fuori una camera molto più pulita e ampia. 
+
+
+TODO: regolare i parametri e controllare se la distanza calcolata è corretta.
