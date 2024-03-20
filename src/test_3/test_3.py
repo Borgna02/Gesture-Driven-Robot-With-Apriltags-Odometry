@@ -17,6 +17,9 @@ class Constants:
 
 class Instrinsics:
     def __init__(self, camera):
+        
+# https://forums.developer.nvidia.com/t/change-intrinsic-camera-parameters/180309/4
+
         width, height = camera.get_resolution() 
         focal_length = camera.get_focal_length()
         horiz_aperture = camera.get_horizontal_aperture()
@@ -36,7 +39,7 @@ class Instrinsics:
         
 # f: 380.6691503796936, cx: 512.0, cy: 512.0
 
-# Viene uguale con entrambi i metodi
+# Viene uguale con entrambi i metodi 
 
 
 
