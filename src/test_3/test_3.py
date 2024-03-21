@@ -13,10 +13,7 @@ class Constants:
     SCENE_PATH = "src/scene_warehouse.usd"
     JETSON_PRIM_PATH = "/World/jetbot"
     CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
-    COMMAND_MANUAL_PATH = "src/test_3/velvec.npy"
     IMAGE_PATH = "src/test_3/test.png"
-    INTRINSICS = {"fx": 433.028, "fy": 415.378, "cx": 512, "cy": 512}
-    # INTRINSICS = {"fx": 433.028, "fy": 415.378, "cx": 541.725, "cy": 659.105}
 
 class Instrinsics:
     def __init__(self, camera):
@@ -128,7 +125,8 @@ class MyJetbot:
     def read_camera(self):
         rgba_array = self.camera.get_current_frame()["rgba"]
         image = ImageUtils.array_to_image(rgba_array)
-        # Visualizzazione dell'immagine
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Salvataggio dell'immagine
         cv2.imwrite(Constants.IMAGE_PATH, image)
         return image
 
@@ -160,20 +158,20 @@ class AprilTagsManager:
 
 
     def detect(self, image, my_jetbot: MyJetbot):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
         # Esegui la detection
         result = self.detector.detect(gray, estimate_tag_pose=True, camera_params=my_jetbot.intrinsics.to_list(), tag_size=0.05)
 
-        stage = omni.usd.get_context().get_stage()
-        prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
-        matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
-        translate: Gf.Vec3d = matrix.ExtractTranslation()
+        # stage = omni.usd.get_context().get_stage()
+        # prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
+        # matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
+        # translate: Gf.Vec3d = matrix.ExtractTranslation()
         
-        tag_pos = (0.21546, 0.0, 0.0001)
+        # tag_pos = (0.21546, 0.0, 0.0001)
         
-        distanza = np.linalg.norm(np.array(translate) - np.array(tag_pos))
+        # distanza = np.linalg.norm(np.array(translate) - np.array(tag_pos))
 
 
         # Stampa i risultati
@@ -195,9 +193,9 @@ class AprilTagsManager:
             
             cv2.imwrite("src/test_3/test_tag.png", image)
             
-            norm = np.linalg.norm(tag.pose_t)
-            # distance = 
-            print(f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: {distanza}")
+            norm = round(np.linalg.norm(tag.pose_t), 3)
+            # print(f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: {distanza}")
+            print(f"ID: {tag.tag_id}, Norm: {norm} m")
             
             break
             
