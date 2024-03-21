@@ -526,3 +526,15 @@ Posizionando la visuale sul punto in cui si vuole creare la camera e poi eseguen
 
 
 TODO: regolare i parametri e controllare se la distanza calcolata è corretta.
+
+
+
+# TODO dati dal prof
+
+1. Scrivere tutti i passaggi per installare il simulatore
+
+    * Installazione omniverse
+    * Installazione software dal launcher (isaac sim, assets, cache)
+    * Creazione alias per il python del simulatore
+    
+2. Andare ad installarlo in laboratorio
