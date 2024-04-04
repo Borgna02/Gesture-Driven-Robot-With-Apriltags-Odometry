@@ -528,6 +528,17 @@ Posizionando la visuale sul punto in cui si vuole creare la camera e poi eseguen
 TODO: regolare i parametri e controllare se la distanza calcolata è corretta.
 
 
+## Calibrazione camera dalla documentazione
+
+![alt text](image-10.png)
+
+
+## Prova diversamente
+Seguo il metodo di creazione camera e calibrazione utilizzato nella documentazione di Isaac a questo link: https://docs.omniverse.nvidia.com/isaacsim/latest/features/sensors_simulation/isaac_sim_sensors_camera.html
+
+
+1. Posiziono la camera via script
+
 
 # TODO dati dal prof
 
@@ -538,3 +549,7 @@ TODO: regolare i parametri e controllare se la distanza calcolata è corretta.
     * Creazione alias per il python del simulatore
     
 2. Andare ad installarlo in laboratorio
+
+* Vedere micromouse competition e movimento in diagonale
+* https://github.com/teamlotto/Isaac-Sim-Warehouse/tree/main sto provando ad installare ed eseguire questo progetto
+
