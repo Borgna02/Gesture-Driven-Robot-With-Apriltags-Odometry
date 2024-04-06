@@ -16,51 +16,18 @@ class Constants:
     JETSON_PRIM_PATH = "/World/jetbot"
     CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
     IMAGE_PATH = "src/test_3/test.png"
-    IMAGE_RESOLUTION = (256,256)
+    IMAGE_RESOLUTION = (1280,1280)
 
 
 class Instrinsics:
     def __init__(self, camera):
+        camera_matrix = camera.get_intrinsics_matrix()
 
-        # https://forums.developer.nvidia.com/t/change-intrinsic-camera-parameters/180309/4
 
-        width, height = camera.get_resolution()
-
-        # Matrice ricavata dalla calibrazione con la scacchiera
-        # camera_matrix = [[433.028, 0.0, 541.725], [0.0, 415.378, 659.105], [0.0, 0.0, 1.0]]
-        camera_matrix = [[958.8, 0.0, 957.8], [
-            0.0, 956.7, 589.5], [0.0, 0.0, 1.0]]
-
-        ((self.fx, _, self.cx), (_, self.fy, self.cy), (_, _, _)) = camera_matrix
-
-        # in mm, 3 microns is a common pixel size for high resolution cameras
-        pixel_size = 3 * 1e-3
-        # f_stop = 1.8            # f-number, the ratio of the lens focal length to the diameter of the entrance pupil
-        # f-number, the ratio of the lens focal length to the diameter of the entrance pupil
-        f_stop = 0.0
-        focus_distance = 0.6    # in meters, the distance from the camera to the object plane
-
-        # The aperture size in mm
-        horizontal_aperture = pixel_size * width
-        vertical_aperture = pixel_size * height
-        focal_length_x = self.fx * pixel_size
-        focal_length_y = self.fy * pixel_size
-        focal_length = (focal_length_x + focal_length_y) / \
-            2         # The focal length in mm
-
-        # Set the camera parameters, note the unit conversion between Isaac Sim sensor and Kit
-        # Convert from mm to cm (or 1/10th of a world unit)
-        camera.set_focal_length(focal_length / 10.0)
-        # The focus distance in meters
-        camera.set_focus_distance(focus_distance)
-        # Convert the f-stop to Isaac Sim units
-        camera.set_lens_aperture(f_stop * 100.0)
-        # Convert from mm to cm (or 1/10th of a world unit)
-        camera.set_horizontal_aperture(horizontal_aperture / 10.0)
-        camera.set_vertical_aperture(vertical_aperture / 10.0)
-
-        camera.set_clipping_range(0.05, 1.0e5)
-
+        ((self.fx,_,self.cx),(_,self.fy,self.cy),(_,_,_)) = camera_matrix
+        
+        print(self.fx, self.cx, self.fy, self.cy)
+        
     def to_list(self):
         return [self.fx, self.fy, self.cx, self.cy]
 
@@ -139,16 +106,17 @@ class MyJetbot:
 
         self.controller = DifferentialController(
             name="simple_control", wheel_radius=0.03, wheel_base=0.1125)
-        
-        #! Capire bene come posizionare nel punto giusto la camera perché così risulta sbagliata sia l'angolazione che la posizione
+
+        # RESOLUTION = (256, 256) 
         self.camera = Camera(prim_path=Constants.CAMERA_PRIM_PATH,
-                             position=np.array([0.025, 0.0, 0.0]),
+                            #  position=np.array([0.25, 0.0, 0.0]),
                              frequency=20,
                              resolution=Constants.IMAGE_RESOLUTION,
-                             orientation=rot_utils.euler_angles_to_quats(
-                                 np.array([-45, 90, -45]), degrees=True),
+                            #  orientation=rot_utils.euler_angles_to_quats(
+                            #      np.array([0, 90, 0]), degrees=True),
                              )
         self.camera.initialize()
+        print(self.camera.get_intrinsics_matrix())
         self.intrinsics = Instrinsics(self.camera)
 
     def do_action(self, message):
@@ -211,14 +179,16 @@ class AprilTagsManager:
         result = self.detector.detect(
             gray, estimate_tag_pose=True, camera_params=my_jetbot.intrinsics.to_list(), tag_size=0.05)
 
-        # stage = omni.usd.get_context().get_stage()
-        # prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
-        # matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
-        # translate: Gf.Vec3d = matrix.ExtractTranslation()
+        stage = omni.usd.get_context().get_stage()
+        prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
+        matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
+        translate: Gf.Vec3d = matrix.ExtractTranslation()
 
-        # tag_pos = (0.21546, 0.0, 0.0001)
+        tag_center_pos = (0.21546, 0.0, 0.0001)
+        tag_top_sx_pos = (0.23549, 0.01632, 0.0001)
 
-        # distanza = np.linalg.norm(np.array(translate) - np.array(tag_pos))
+        distanza_centro = np.linalg.norm(np.array(translate) - np.array(tag_center_pos))
+        distanza_top_sx = np.linalg.norm(np.array(translate) - np.array(tag_top_sx_pos))
 
         # Stampa i risultati
         for tag in result:
@@ -240,8 +210,8 @@ class AprilTagsManager:
             cv2.imwrite("src/test_3/test_tag.png", image)
 
             norm = round(np.linalg.norm(tag.pose_t), 3)
-            # print(f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: {distanza}")
-            print(f"ID: {tag.tag_id}, Norm: {norm} m")
+            print(f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: centro : {distanza_centro}, topsx: {distanza_top_sx}")
+            # print(f"ID: {tag.tag_id}, Norm: {norm} m")
 
             break
 

@@ -532,6 +532,8 @@ TODO: regolare i parametri e controllare se la distanza calcolata è corretta.
 
 ![alt text](image-10.png)
 
+Cerco di eseguire il processo inverso, ovvero:
+1. Da camera.get_focal_length ricavo focal length.
 
 ## Prova diversamente
 Seguo il metodo di creazione camera e calibrazione utilizzato nella documentazione di Isaac a questo link: https://docs.omniverse.nvidia.com/isaacsim/latest/features/sensors_simulation/isaac_sim_sensors_camera.html
@@ -539,6 +541,23 @@ Seguo il metodo di creazione camera e calibrazione utilizzato nella documentazio
 
 1. Posiziono la camera via script
 
+## Esempio interessante (da vedere)
+
+![alt text](image-11.png)
+
+# DOPO VENTI ORE DI LAVORO HO SCOPERTO CHE ESISTE IL METODO GET_INTRINSICS_MATRIX()
+
+Lo scarto tra la distanza calcolata tramite apriltags e quella calcolata manualmente tra la posizione della camera e quella del tag è:
+
+![alt text](image-12.png)
+
+ 
+ovvero 1 cm dato che il calcolo è fatto sull'angolo in alto a sinistra. In alcuni casi anche meno: 
+
+![alt text](image-13.png)
+
+
+![alt text](image-14.png)
 
 # TODO dati dal prof
 
