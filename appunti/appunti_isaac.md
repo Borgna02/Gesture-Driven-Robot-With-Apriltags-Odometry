@@ -315,7 +315,7 @@ Esistono due modi di eseguire scripting diretto:
 
 Per eseguire il codice Python con le librerie Isaac bisogna utilizzare l'environment fornito da loro. Ciò può essere fatto eseguendo il python.sh (.bat in windows) e passando come argomento il percorso del file python. In linux ho creato il comando isaac_py che esegue il python di Isaac. Per aggiungere dei moduli a quel python credo si possano inserire all'interno del requirements.txt.
 
-Per il debugging da VSCode è possibile aprire direttamente la cartella di Isaac (percorso ```~/.local/ov/pkg/Isaac_sim ...``` in linux,```C:\Users\danyb\AppData\Local\ov\pkg\isaac_sim-2023.1.1``` in windows ) da vscode ed eseguire il codice con il debugger "Attach ...".
+Per il debugging da VSCode è possibile aprire direttamente la cartella di Isaac (percorso ```~/home/daniele/.local/share/ov/pkg/isaac_sim ...``` in linux,```C:\Users\danyb\AppData\Local\ov\pkg\isaac_sim-2023.1.1``` in windows ) da vscode ed eseguire il codice con il debugger "Attach ...".
 
 ## Testing Extensions with Python
 https://docs.omniverse.nvidia.com/kit/docs/kit-manual/latest/guide/testing_exts_python.html

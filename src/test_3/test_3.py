@@ -16,7 +16,7 @@ class Constants:
     JETSON_PRIM_PATH = "/World/jetbot"
     CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
     IMAGE_PATH = "src/test_3/test.png"
-    IMAGE_RESOLUTION = (1280,1280)
+    IMAGE_RESOLUTION = (1920,1200)
 
 
 class Instrinsics:
@@ -45,15 +45,16 @@ import omni.isaac.core.utils.numpy.rotations as rot_utils
 
 
 class ImageUtils:
+    @staticmethod
     def array_to_image(array):
-        # Creazione di un'immagine vuota di dimensione Constants.IMAGE_RESOLUTION con 4 canali (RGBA)
-        image = np.zeros((Constants.IMAGE_RESOLUTION[0], Constants.IMAGE_RESOLUTION[1], 4), dtype=np.uint8)
+        # Assicurati che 'array' sia un array di numpy per evitare errori
+        array = np.asarray(array)
 
-        # Assegnazione dei valori RGBA all'immagine
-        image[:, :, 0] = array[:, :, 0]  # Red
-        image[:, :, 1] = array[:, :, 1]  # Green
-        image[:, :, 2] = array[:, :, 2]  # Blue
-        image[:, :, 3] = array[:, :, 3]  # Alpha
+        # Creazione di un'immagine vuota con la stessa forma e tipo di dato di 'array'
+        image = np.zeros(array.shape, dtype=array.dtype)
+
+        # Copia dei dati da 'array' a 'image'
+        image[:] = array
 
         return image
 
@@ -107,13 +108,8 @@ class MyJetbot:
         self.controller = DifferentialController(
             name="simple_control", wheel_radius=0.03, wheel_base=0.1125)
 
-        # RESOLUTION = (256, 256) 
         self.camera = Camera(prim_path=Constants.CAMERA_PRIM_PATH,
-                            #  position=np.array([0.25, 0.0, 0.0]),
-                             frequency=20,
                              resolution=Constants.IMAGE_RESOLUTION,
-                            #  orientation=rot_utils.euler_angles_to_quats(
-                            #      np.array([0, 90, 0]), degrees=True),
                              )
         self.camera.initialize()
         print(self.camera.get_intrinsics_matrix())
