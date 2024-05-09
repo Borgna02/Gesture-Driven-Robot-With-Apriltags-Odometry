@@ -1,46 +1,43 @@
-
+# Importante che sia per primo perché se il simulatore non è avviato non posso eseguire gli altri import
+from sim_start import sim, CONFIG
+from omni.isaac.kit import SimulationApp
+from pxr import Gf, Usd
 import numpy as np
-import omni
-from time import sleep
-from PIL import Image
 import paho.mqtt.client as mqtt
 import cv2
 import pyapriltags
-from omni.isaac.kit import SimulationApp
-print(omni.isaac.core.__file__)
-exit()
+from omni.usd import get_context, get_world_transform_matrix
+import omni.isaac.core.utils.numpy.rotations as rot_utils
+import omni
+from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
+from omni.isaac.sensor import Camera
+from omni.isaac.core.utils.stage import is_stage_loading
+from omni.isaac.wheeled_robots.robots import WheeledRobot
+from omni.isaac.core import World
+from PIL import Image
 
 
-CONFIG = {"sync_loads": True, "headless": False, "renderer": "RayTracedLighting"}
 SCENE_PATH = "src/scene_warehouse.usd"
 JETSON_PRIM_PATH = "/World/jetbot"
 CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
 IMAGE_PATH = "src/test_3/test.png"
-IMAGE_RESOLUTION = (1920,1200)
+IMAGE_RESOLUTION = (1920, 1200)
 
 
 class Instrinsics:
-    def __init__(self, camera):
+    def __init__(self, camera: Camera):
 
         # Recupero gli instrinsics dal simulatore
-        ((self.fx,_,self.cx),(_,self.fy,self.cy),(_,_,_)) = camera.get_intrinsics_matrix()
-        
+        ((self.fx, _, self.cx), (_, self.fy, self.cy),
+         (_, _, _)) = camera.get_intrinsics_matrix()
+
         print(self.fx, self.cx, self.fy, self.cy)
-        
+
     def to_list(self):
         return [self.fx, self.fy, self.cx, self.cy]
 
 
-sim = SimulationApp(launch_config=CONFIG)
-
 # I seguenti import funzionano solo DOPO che la simulazione è stata lanciata
-from omni.isaac.core import World
-from omni.isaac.wheeled_robots.robots import WheeledRobot
-from omni.isaac.core.utils.stage import is_stage_loading
-from omni.isaac.sensor import Camera
-from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
-from pxr import Gf
-import omni.isaac.core.utils.numpy.rotations as rot_utils
 
 
 class ImageUtils:
@@ -58,45 +55,11 @@ class ImageUtils:
         return image
 
 
-class SimHandler:
-
-    def __init__(self, simulation: SimulationApp):
-        self.sim = simulation
-
-        # open stage
-        omni.usd.get_context().open_stage(SCENE_PATH)
-
-        # wait two frames so that stage starts loading
-        self.sim.update()
-        self.sim.update()
-
-        print("Loading stage...")
-
-        while is_stage_loading():
-            self.sim.update()
-        print("Loading Complete")
-
-        self.world = World(stage_units_in_meters=1.0)
-
-    def start_program(self, my_jetbot, mqtt_client, at_manager):
-        while self.sim.is_running():
-            self.world.step(render=not CONFIG["headless"])
-
-            # deal with pause/stop
-            if self.world.is_playing():
-                if self.world.current_time_step_index == 0:
-                    self.world.reset()
-
-                mqtt_client.check_messages()
-                image = my_jetbot.read_camera()
-                at_manager.detect(image, my_jetbot)
-
-
 class MyJetbot:
 
     def __init__(self, world: World):
 
-        self.jetbot = world.scene.add(
+        self.jetbot: WheeledRobot = world.scene.add(
             WheeledRobot(
                 prim_path=JETSON_PRIM_PATH,
                 # name="my_jetbot",
@@ -174,16 +137,18 @@ class AprilTagsManager:
         result = self.detector.detect(
             gray, estimate_tag_pose=True, camera_params=my_jetbot.intrinsics.to_list(), tag_size=0.05)
 
-        stage = omni.usd.get_context().get_stage()
+        stage: Usd.Stage = get_context().get_stage()
         prim = stage.GetPrimAtPath(CAMERA_PRIM_PATH)
-        matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
-        translate: Gf.Vec3d = matrix.ExtractTranslation()
+        matrix = get_world_transform_matrix(prim)
+        translate = matrix.ExtractTranslation()
 
         tag_center_pos = (0.21546, 0.0, 0.0001)
         tag_top_sx_pos = (0.23549, 0.01632, 0.0001)
 
-        distanza_centro = np.linalg.norm(np.array(translate) - np.array(tag_center_pos))
-        distanza_top_sx = np.linalg.norm(np.array(translate) - np.array(tag_top_sx_pos))
+        distanza_centro = np.linalg.norm(
+            np.array(translate) - np.array(tag_center_pos))
+        distanza_top_sx = np.linalg.norm(
+            np.array(translate) - np.array(tag_top_sx_pos))
 
         # Stampa i risultati
         for tag in result:
@@ -205,10 +170,45 @@ class AprilTagsManager:
             cv2.imwrite("src/test_3/test_tag.png", image)
 
             norm = round(np.linalg.norm(tag.pose_t), 3)
-            print(f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: centro : {distanza_centro}, topsx: {distanza_top_sx}")
+            print(
+                f"ID: {tag.tag_id}, Norm: {norm}, Dist calcolata manualmente: centro : {distanza_centro}, topsx: {distanza_top_sx}")
             # print(f"ID: {tag.tag_id}, Norm: {norm} m")
 
             break
+
+
+class SimHandler:
+
+    def __init__(self, simulation: SimulationApp):
+        self.sim = simulation
+
+        # open stage
+        get_context().open_stage(SCENE_PATH)
+
+        # wait two frames so that stage starts loading
+        self.sim.update()
+        self.sim.update()
+
+        print("Loading stage...")
+
+        while is_stage_loading():
+            self.sim.update()
+        print("Loading Complete")
+
+        self.world = World(stage_units_in_meters=1.0)
+
+    def start_program(self, my_jetbot: MyJetbot, mqtt_client: MqttManager, at_manager: AprilTagsManager):
+        while self.sim.is_running():
+            self.world.step(render=not CONFIG["headless"])
+
+            # deal with pause/stop
+            if self.world.is_playing():
+                if self.world.current_time_step_index == 0:
+                    self.world.reset()
+
+                mqtt_client.check_messages()
+                image = my_jetbot.read_camera()
+                at_manager.detect(image, my_jetbot)
 
 
 if __name__ == "__main__":
