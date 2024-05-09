@@ -7,24 +7,23 @@ import paho.mqtt.client as mqtt
 import cv2
 import pyapriltags
 from omni.isaac.kit import SimulationApp
+print(omni.isaac.core.__file__)
+exit()
 
 
-class Constants:
-    CONFIG = {"width": 1280, "height": 720, "sync_loads": True,
-              "headless": False, "renderer": "RayTracedLighting"}
-    SCENE_PATH = "src/scene_warehouse.usd"
-    JETSON_PRIM_PATH = "/World/jetbot"
-    CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
-    IMAGE_PATH = "src/test_3/test.png"
-    IMAGE_RESOLUTION = (1920,1200)
+CONFIG = {"sync_loads": True, "headless": False, "renderer": "RayTracedLighting"}
+SCENE_PATH = "src/scene_warehouse.usd"
+JETSON_PRIM_PATH = "/World/jetbot"
+CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
+IMAGE_PATH = "src/test_3/test.png"
+IMAGE_RESOLUTION = (1920,1200)
 
 
 class Instrinsics:
     def __init__(self, camera):
-        camera_matrix = camera.get_intrinsics_matrix()
 
-
-        ((self.fx,_,self.cx),(_,self.fy,self.cy),(_,_,_)) = camera_matrix
+        # Recupero gli instrinsics dal simulatore
+        ((self.fx,_,self.cx),(_,self.fy,self.cy),(_,_,_)) = camera.get_intrinsics_matrix()
         
         print(self.fx, self.cx, self.fy, self.cy)
         
@@ -32,7 +31,7 @@ class Instrinsics:
         return [self.fx, self.fy, self.cx, self.cy]
 
 
-sim = SimulationApp(launch_config=Constants.CONFIG)
+sim = SimulationApp(launch_config=CONFIG)
 
 # I seguenti import funzionano solo DOPO che la simulazione è stata lanciata
 from omni.isaac.core import World
@@ -65,7 +64,7 @@ class SimHandler:
         self.sim = simulation
 
         # open stage
-        omni.usd.get_context().open_stage(Constants.SCENE_PATH)
+        omni.usd.get_context().open_stage(SCENE_PATH)
 
         # wait two frames so that stage starts loading
         self.sim.update()
@@ -81,7 +80,7 @@ class SimHandler:
 
     def start_program(self, my_jetbot, mqtt_client, at_manager):
         while self.sim.is_running():
-            self.world.step(render=not Constants.CONFIG["headless"])
+            self.world.step(render=not CONFIG["headless"])
 
             # deal with pause/stop
             if self.world.is_playing():
@@ -99,7 +98,7 @@ class MyJetbot:
 
         self.jetbot = world.scene.add(
             WheeledRobot(
-                prim_path=Constants.JETSON_PRIM_PATH,
+                prim_path=JETSON_PRIM_PATH,
                 # name="my_jetbot",
                 wheel_dof_names=["left_wheel_joint", "right_wheel_joint"]
             )
@@ -108,8 +107,8 @@ class MyJetbot:
         self.controller = DifferentialController(
             name="simple_control", wheel_radius=0.03, wheel_base=0.1125)
 
-        self.camera = Camera(prim_path=Constants.CAMERA_PRIM_PATH,
-                             resolution=Constants.IMAGE_RESOLUTION,
+        self.camera = Camera(prim_path=CAMERA_PRIM_PATH,
+                             resolution=IMAGE_RESOLUTION,
                              )
         self.camera.initialize()
         print(self.camera.get_intrinsics_matrix())
@@ -135,7 +134,7 @@ class MyJetbot:
         image = ImageUtils.array_to_image(rgba_array)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         # Salvataggio dell'immagine
-        cv2.imwrite(Constants.IMAGE_PATH, image)
+        cv2.imwrite(IMAGE_PATH, image)
         return image
 
 
@@ -176,7 +175,7 @@ class AprilTagsManager:
             gray, estimate_tag_pose=True, camera_params=my_jetbot.intrinsics.to_list(), tag_size=0.05)
 
         stage = omni.usd.get_context().get_stage()
-        prim = stage.GetPrimAtPath(Constants.CAMERA_PRIM_PATH)
+        prim = stage.GetPrimAtPath(CAMERA_PRIM_PATH)
         matrix: Gf.Matrix4d = omni.usd.get_world_transform_matrix(prim)
         translate: Gf.Vec3d = matrix.ExtractTranslation()
 
