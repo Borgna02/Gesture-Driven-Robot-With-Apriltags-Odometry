@@ -595,3 +595,47 @@ ovvero 1 cm dato che il calcolo è fatto sull'angolo in alto a sinistra. In alcu
 
 Il modo più semplice per avere le librerie di Isaac importate in VSCode e quindi autocomplete quando si lavora con esse è quello di aprire con VSCode direttamente la cartella del package, ovvero
 ```.local/share/ov/pkg/isaac_sim-2023.1.1/```. Di conseguenza, sposto la cartella del progetto in tale cartella.
+
+# Posizioni dei prim nella scena
+
+La posizione e l'orientamento dei prim viene mostrata attraverso la Transform Matrix, che può essere locale e globale. Ecco come si interpeta la transform matrix:
+
+>### Interpretazione delle Componenti della Matrice
+>
+>* **Prime tre colonne**:
+>  * Ogni colonna delle prime tre righe rappresenta un vettore asse. Gli assi X, Y, Z del sistema di coordinate della camera sono trasformati in base alla rotazione (e alla scalatura, se applicata).
+>  * Le prime tre colonne definiscono quindi come gli assi della camera sono orientati rispetto al sistema di coordinate globale (o al sistema di coordinate del genitore, nel caso di trasformazioni locali).
+>
+>* **Quarta colonna**:
+>  * La quarta colonna rappresenta la traslazione della camera nel sistema di coordinate. Indica dove si trova l'origine della camera in questo sistema. Questi valori sono spesso in metri, ma l'unità di misura dipende dal contesto specifico dell'applicazione.
+>
+>* **Ultima riga**:
+>  * L'ultima riga `(0, 0, 0, 1)` è standard nelle matrici di trasformazione affine in 3D e serve a mantenere la consistenza matematica per le operazioni di trasformazione.
+>
+>Nelle matrici di trasformazione 4x4 che hai fornito, le coordinate \(x, y, z\) che indicano la posizione della camera nel rispettivo sistema di coordinate sono date dall'elemento nella quarta colonna delle prime tre righe. Questo elemento rappresenta il vettore di traslazione della camera. Ecco come queste coordinate appaiono nelle due matrici che hai specificato:
+>
+>1. **Camera Position Matrix**:
+>
+>   $$
+>   \begin{bmatrix}
+>   -0.00403228 & -0.99999239 & 0.00140023 & 0 \\
+>   0.81086778 & -0.00245040 & 0.58522767 & 0 \\
+>   -0.58521979 & 0.00349492 & 0.81086906 & 0 \\
+>   0.16708956 & -0.03213537 & 0.18715836 & 1 \\
+>   \end{bmatrix}
+>   $$
+>
+>   Posizione: $x = 0.16708956, y = -0.03213537, z = 0.18715836$
+>
+>2. **Local Camera Transform**:
+>
+>   $$
+>   \begin{bmatrix}
+>   -0.00416411 & -0.99999133 & 9.74542202 \times 10^{-9} & 0 \\
+>   0.56640132 & -0.00235857 & 0.82412619 & 0 \\
+>   -0.82411905 & 0.00343176 & 0.56640623 & 0 \\
+>   0.07833982 & -0.00594328 & 0.11956879 & 1 \\
+>   \end{bmatrix}
+>   $$
+>
+>   Posizione: $x = 0.07833982, y = -0.00594328, z = 0.11956879$

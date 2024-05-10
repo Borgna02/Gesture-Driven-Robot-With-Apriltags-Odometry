@@ -1,20 +1,18 @@
-# Importante che sia per primo perché se il simulatore non è avviato non posso eseguire gli altri import
+# Importante che sim_start sia per primo perché se il simulatore non è avviato non posso eseguire gli altri import
 from sim_start import sim, CONFIG
 from omni.isaac.kit import SimulationApp
-from pxr import Gf, Usd
+from pxr import Usd, UsdGeom, Gf
 import numpy as np
 import paho.mqtt.client as mqtt
 import cv2
+
 import pyapriltags
-from omni.usd import get_context, get_world_transform_matrix
-import omni.isaac.core.utils.numpy.rotations as rot_utils
-import omni
+from omni.usd import get_context, get_world_transform_matrix, get_local_transform_matrix
 from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
 from omni.isaac.sensor import Camera
 from omni.isaac.core.utils.stage import is_stage_loading
 from omni.isaac.wheeled_robots.robots import WheeledRobot
 from omni.isaac.core import World
-from PIL import Image
 
 
 SCENE_PATH = "src/scene_warehouse.usd"
@@ -24,6 +22,7 @@ IMAGE_PATH = "src/test_3/test.png"
 IMAGE_RESOLUTION = (1920, 1200)
 
 
+
 class Instrinsics:
     def __init__(self, camera: Camera):
 
@@ -31,7 +30,6 @@ class Instrinsics:
         ((self.fx, _, self.cx), (_, self.fy, self.cy),
          (_, _, _)) = camera.get_intrinsics_matrix()
 
-        print(self.fx, self.cx, self.fy, self.cy)
 
     def to_list(self):
         return [self.fx, self.fy, self.cx, self.cy]
@@ -138,8 +136,12 @@ class AprilTagsManager:
             gray, estimate_tag_pose=True, camera_params=my_jetbot.intrinsics.to_list(), tag_size=0.05)
 
         stage: Usd.Stage = get_context().get_stage()
-        prim = stage.GetPrimAtPath(CAMERA_PRIM_PATH)
+        prim: Usd.Prim = stage.GetPrimAtPath(CAMERA_PRIM_PATH)
         matrix = get_world_transform_matrix(prim)
+        local_matrix = get_local_transform_matrix(prim)
+        print("\nCamera position: " + str(matrix) + "\n\n")
+        print("\nLocal camera transform: " + str(local_matrix) + "\n\n")
+        exit()
         translate = matrix.ExtractTranslation()
 
         tag_center_pos = (0.21546, 0.0, 0.0001)
