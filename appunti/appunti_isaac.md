@@ -594,7 +594,23 @@ ovvero 1 cm dato che il calcolo è fatto sull'angolo in alto a sinistra. In alcu
 # Setup VSCode e autocomplete
 
 Il modo più semplice per avere le librerie di Isaac importate in VSCode e quindi autocomplete quando si lavora con esse è quello di aprire con VSCode direttamente la cartella del package, ovvero
-```.local/share/ov/pkg/isaac_sim-2023.1.1/```. Di conseguenza, sposto la cartella del progetto in tale cartella.
+```.local/share/ov/pkg/isaac_sim-2023.1.1/```. Di conseguenza, sposto la cartella del progetto in tale cartella. Un problema di questo approccio è che la cartella del package contiene troppi file, quindi Pylance fatica a caricare i moduli. Decido quindi di spostare la cartella .vscode che si trova nella cartella principale all'interno della cartella ```thesis-project```, quindi semplicemente modificare tutti i percorsi all'interno di settings json nella lista ```"python.analysis.extraPaths"``` aggiungendo all'inizio di ognuno ```../```
+
+```json
+    // PRIMA
+    "python.analysis.extraPaths": [
+        "exts/omni.exporter.urdf",
+        "exts/omni.exporter.urdf/pip_prebundle",
+        "exts/omni.isaac.app.selector",
+        ...
+    // DOPO
+    "python.analysis.extraPaths": [
+        "../exts/omni.exporter.urdf",
+        "../exts/omni.exporter.urdf/pip_prebundle",
+        "../exts/omni.isaac.app.selector",
+        ...
+
+```
 
 # Posizioni dei prim nella scena
 
