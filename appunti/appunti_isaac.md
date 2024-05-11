@@ -639,3 +639,75 @@ La posizione e l'orientamento dei prim viene mostrata attraverso la Transform Ma
 >   $$
 >
 >   Posizione: $x = 0.07833982, y = -0.00594328, z = 0.11956879$
+
+
+
+# Installazione su windows
+
+1. https://www.nvidia.com/en-in/omniverse/download/, fare il login e scaricare per Windows
+
+2. Eseguire il launcher e accedere
+
+3. Scaricare ISAAC SIM all'interno della libreria
+
+Per sapere il percorso di installazione del package si può andare su LIBRERIA > Isaac Sim, quindi cliccare sulle tre lineette > Impostazioni. Per sviluppare il progetto usufruendo dell'autocomplete clono la repository all'interno della cartella principale. Nel mio caso è ```C:\Users\danyb\AppData\Local\ov\pkg\isaac_sim-2023.1.1```. Successivamente, per eseguire i programmi python all'interno del progetto mi basterà passare il loro percorso come argomento al ```python.bat``` che si trova nella cartella principale.
+
+Per installare pacchetti aggiuntivi (mosquitto, apriltags) si può usare il comando `./python.bat -m pip install name_of_package_here`.
+
+Prima di eseguire questo, ho aggiornato pip con `./python.bat -m pip install --upgrade pip`.
+
+```bash
+    ./python.bat -m pip install --upgrade pip
+    ./python.bat -m pip install paho-mqtt
+    ./python.bat -m pip install python-opencv
+    ./python.bat -m pip install pyapriltags
+```
+
+## Cache
+
+Per aumentare la velocità di avvio provo ad installare la cache. Basta andare su Libreria > Cache > Installa.
+
+## Prima inclusione di Docker
+
+Il primo container incluso nel progetto è quello di Mosquitto. All'interno della cartella test_4 ho inserito la cartella mosquitto contenente le tre sottocartelle 
+* config contenente il file mosquitto.conf 
+    ```yml 
+        persistence true
+        persistence_location /mosquitto/data/
+
+        log_dest file /mosquitto/log/mosquitto.log
+        log_dest stdout
+
+        listener 1883
+
+        allow_anonymous true
+    ```
+* data 
+* log
+
+Quindi all'interno della cartella test_4 il file docker-compose.yml
+```yml
+services:
+    mqtt:
+        container_name: mqtt
+        image: eclipse-mosquitto
+        restart: always
+        volumes:
+            - "./mosquitto/config:/mosquitto/config"
+            - "./mosquitto/log:/mosquitto/log"
+            - "./mosquitto/data:/mosquitto/data"
+        expose:
+            - 1883
+        ports:
+            - 1883:1883 
+            - 9001:9001
+        hostname: mqtt
+```
+A questo punto basterà eseguire il ```docker compose up``` per far avviare il broker, quindi eseguire lo script python.
+
+# Estensioni
+
+Il workflow standalone ha il difetto di dover caricare la scena ad ogni esecuzione, il che richiede molto tempo. Per ovviare a questo problema provo a seguire il workflow delle estensioni. Per fare ciò basta:
+1. Aprire Isaac e caricare la scena ```scene_warehouse.usd```
+2. Andare su Window > Extensions
+3. Cliccare + > new extension template project, quindi selezionare una cartella e creare il progetto.

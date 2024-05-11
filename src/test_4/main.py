@@ -14,8 +14,8 @@ from omni.isaac.core.utils.stage import is_stage_loading
 from omni.isaac.wheeled_robots.robots import WheeledRobot
 from omni.isaac.core import World
 
-
-SCENE_PATH = "thesis_project/src/scene_warehouse.usd"
+PROJECT_PATH = "thesis_project/src/"
+SCENE_PATH = PROJECT_PATH + "scene_warehouse.usd"
 JETSON_PRIM_PATH = "/World/jetbot"
 CAMERA_PRIM_PATH = JETSON_PRIM_PATH + "/chassis/rgb_camera/jetbot_cam"
 IMAGE_PATH = "src/test_3/test.png"
@@ -141,7 +141,7 @@ class AprilTagsManager:
         local_matrix = get_local_transform_matrix(prim)
         print("\nCamera position: " + str(matrix) + "\n\n")
         print("\nLocal camera transform: " + str(local_matrix) + "\n\n")
-        exit()
+
         translate = matrix.ExtractTranslation()
 
         tag_center_pos = (0.21546, 0.0, 0.0001)
@@ -169,7 +169,7 @@ class AprilTagsManager:
             (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
             cv2.circle(image, (cX, cY), 5, (0, 0, 255), -1)
 
-            cv2.imwrite("src/test_3/test_tag.png", image)
+            cv2.imwrite(PROJECT_PATH + "/test_4/test_tag.png", image)
 
             norm = round(np.linalg.norm(tag.pose_t), 3)
             print(
