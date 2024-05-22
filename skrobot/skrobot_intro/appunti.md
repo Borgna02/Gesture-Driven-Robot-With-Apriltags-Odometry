@@ -380,3 +380,35 @@ In ordine, i numeri rappresentano:
 Se l'errore aumenta troppo vuol dire che ho appesantito troppo il loop quindi posso:
 1. Aumentare il tempo
 2. Alleggerire il loop
+
+
+# Teoria SKROBOT
+
+v![alt text](image-11.png)
+
+Con pysketch sviluppo un "satellite". I satelliti si possono connetttere via TCP o via Socket (tipo quella chiamata Robot). A destra la versione multicentralizzata in cui si crea una rete più grande. Si possono spartire i lavori sui diversi satelliti (diversi processi sulla stessa macchina o su più macchine). Ad esempio se SkRobot può semplicemente raccogliere i diversi satelliti senza eseguire niente e senza avere bisogno di troppe risorse.  Il collegamento può essere fatto sia attraverso SkRobot sia peer to peer (troppo complesso). 
+
+![alt text](image-12.png)
+
+In questo esempio Sat A spedisce i dati audio (PCM 1) agli altri satelliti attraversi i **canali** (equivalente dei topic). Su un singolo flusso (freccia verde chiara) possono essere creati più canali. SatD e SatB si sottoscrivono ai canali e raccolgono PCM1. In questo caso vediamo lavoro in parallelo ma può essere fatto anche in cascata.
+
+![alt text](image-13.png)
+
+Questo è simile a quello che devo fare io. Si può parallelizzare SatB se ad esempio A restituisce 60 frame al secondo, creo 4 SatB oguno dei quali elabora un frame ogni quattro in ordine. UN modo per inviare dati efficiente è in binario, ad esempio un array di (x,y,width, leght) invece di inviarlo come json o csv si può inviare come array. I canali fatti fin'ora sono di streaming (1 a n), ma esistono canali di servizio 1 a 1 su cui si possono ricevere dei comandi.
+
+![alt text](image-14.png)
+
+Ad esempio in questo caso gli arancioni servono per mandare comandi al Nao.
+
+# Coppelia
+
+## Installazione
+Per installare coppeliaSim su ubuntu 22.04 bisogna:
+1. Andare su https://www.coppeliarobotics.com/#download
+2. Scaricare il pacchetto per ubuntu 22.04
+3. Estrarre il zip scaricato nella posizione più comoda
+4. Eseguire coppeliaSim.sh
+
+## Implementazione API
+
+Per implementare le API in Python occorre innanzitutto installare il pacchetto da pip con ```pip install coppeliasim_zmqremoteapi_client```.
