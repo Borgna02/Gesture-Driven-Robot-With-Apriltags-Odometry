@@ -23,6 +23,7 @@
 
 import json
 import math
+import struct
 
 import cv2
 from PySketch.abstractflow import FlowChannel
@@ -30,6 +31,7 @@ from PySketch.flowsync import FlowSync
 from PySketch.flowproto import FlowChanID, Variant_T, Flow_T
 from PySketch.flowsat import FlowSat
 from PySketch.elapsedtime import ElapsedTime
+from PySketch.databuffer import DataBuffer
 
 ###############################################################################
 
@@ -52,9 +54,11 @@ class Command(Enum):
     RIGHT = 4
     STOP = -1
 
+
 class Mode(Enum):
     MANUAL = 1
     AUTO = 2
+
 
 class Constants:
     # Numero di elementi utilizzati per la media
@@ -65,6 +69,7 @@ class Constants:
     CAM_REFRESH_TIME = 0.05
     # Dimensioni della finestra con la webcam
     WINDOW_WIDTH = 500
+
 
 class MathUtils:
 
@@ -81,6 +86,7 @@ class MathUtils:
     def distance(point_1, point_2):
 
         return math.sqrt((point_2[0] - point_1[0])**2 + (point_2[1] - point_1[1])**2)
+
 
 class handTracker():
     def __init__(self, mode=False, maxHands=1, detectionCon=0.5, modelComplexity=1, trackCon=0.5):
@@ -114,7 +120,7 @@ class handTracker():
     def compute_landmarks(self, image):
         # A ogni iterazione svuoto la lista dei landmarks
         self.current_lm_list = []
-        
+
         # Trova e disegna le posizioni dei landmark delle mani sull'immagine
         self.positionFinder(image)
 
@@ -138,30 +144,31 @@ class handTracker():
     def get_lm_coords(self, id):
         return (self.current_lm_list[id][1], self.current_lm_list[id][2])
 
+
 class GestureController:
 
     def __init__(self):
-        self._current_mode = Mode.MANUAL
+        self._current_mode = Mode.AUTO 
 
         self._tracker = handTracker()
 
         self._changing_mode = False
         self._mean_counter = 0
         self._meanPos = 0
-        
+
         self._last_operation = ""
         self._reached = False
         self._counter = 0
         self._image = None
-          
-        self._pos = (0,0)
+
+        self._pos = (0, 0)
         self._orient = 0
 
     def get_index_direction(self):
 
         wirst_x, wirst_y = self._tracker.get_lm_coords(0)
         index_x, index_y = self._tracker.get_lm_coords(8)
-        
+
         slope = MathUtils.get_slope((wirst_x, wirst_y), (index_x, index_y))
 
         # Se l'indice si trova in posizione più bassa rispetto al polso, cambio modalità
@@ -225,7 +232,11 @@ class GestureController:
             self._mean_pos = Command.STOP
 
         print("Changing Mode in " + self._current_mode.name)
-        sat.publishInt8(gestureModeChan.chanID, self._current_mode.value)
+        
+        
+        sat.setCurrentDbName(gestureModeChan.name)
+        sat.setVariable("mode", self._current_mode.value)
+        sat.setCurrentDbName(sat._userName)
 
     def compute_operation(self):
 
@@ -234,7 +245,7 @@ class GestureController:
             if (not self._changing_mode):
                 self.change_mode()
             return Command.STOP
-        
+
         else:
             # se "torno" con l'indice sopra al polso cambiare un'altra volta modalità
             if (self._changing_mode):
@@ -243,7 +254,7 @@ class GestureController:
         ##
         # Se sono in modalità manuale
         ##
-        
+
         if self._current_mode == Mode.MANUAL:
             # Se faccio il pugno in modalità manuale oppure rimuovo le mani dalla finestra il robot si ferma
             if (not self._tracker.current_lm_list or self.calculate_number() == 0):
@@ -251,18 +262,18 @@ class GestureController:
 
             # Sennò calcolo e restituisco la direzione
             return self.get_index_direction()
-        
+
         ##
         # Se sono in modalità automatica
         ##
-        
+
         # Se chiudo il pugno o rimuovo le mani dalla finestra ho tre possibilità
         if (not self._tracker.current_lm_list or self.calculate_number() == 0):
-            
-            # Se ho raggiunto il target e ho la mano chiusa o fuori dall'inquadratura scrivo arrivato 
-            if(self._reached):
+
+            # Se ho raggiunto il target e ho la mano chiusa o fuori dall'inquadratura scrivo arrivato
+            if (self._reached):
                 return "Arrivato"
-            
+
             # Se torno al pugno chiuso quando ho già finito di calcolare la posizione, continuo a mantenere la posizione calcolata
             if (self._mean_counter == Constants.MEAN_DIMENSION + 1 or self._mean_counter == -1):
                 self._mean_counter = -1
@@ -273,13 +284,13 @@ class GestureController:
             return Command.STOP
 
         # Se ho raggiunto il target e ho la mano aperta, reinizializzo il calcolo
-        if(self._reached):
+        if (self._reached):
             self._mean_counter = 0
             self._reached = False
             return "Arrivato"
-            
+
         return self.get_hand_mean()
-        
+
     def calculate_number(self):
 
         number = 0
@@ -291,60 +302,60 @@ class GestureController:
         index_knuckle = self._tracker.get_lm_coords(6)
         if MathUtils.distance(wirst, index_tip) > MathUtils.distance(wirst, index_knuckle):
             number += 1
-            
+
         # verifico se il medio è aperto
         middle_tip = self._tracker.get_lm_coords(12)
         middle_knucle = self._tracker.get_lm_coords(10)
         if MathUtils.distance(wirst, middle_tip) > MathUtils.distance(wirst, middle_knucle):
             number += 1
-            
+
         # verifico se l'anulare è aperto
         ring_tip = self._tracker.get_lm_coords(16)
         ring_knucle = self._tracker.get_lm_coords(14)
         if MathUtils.distance(wirst, ring_tip) > MathUtils.distance(wirst, ring_knucle):
             number += 1
-            
+
         # verifico se il mignolo è aperto
         pinky_tip = self._tracker.get_lm_coords(20)
         pinky_knucle = self._tracker.get_lm_coords(18)
         if MathUtils.distance(wirst, pinky_tip) > MathUtils.distance(wirst, pinky_knucle):
             number += 1
-            
+
         # il pollice è aperto se la distanza tra la punta e il landmark 17 è maggiore della distanza tra il landmark 17 e il polso più un certo margine
         # (quest'ultima usata come unità di misura anche se non rappresenta esattamente la distanza del pollice dal centro)
         thumb_tip = self._tracker.get_lm_coords(4)
         lm_17 = self._tracker.get_lm_coords(17)
         if MathUtils.distance(thumb_tip, lm_17) > MathUtils.distance(wirst, lm_17) * 1.1:
             number += 1
-            
+
         return number
-    
-    def publish_operation(self, current_operation):
+
+    def publish_manual_operation(self, operation: Command):
+        # Invio l'operazione solo se è diversa da quella precedente
+        if (self._last_operation != operation):
+            print("New operation: " + str(operation))
+            sat.publishInt8(gestureManualChan.chanID,
+                            operation.value)
+            self._last_operation = operation
+
+    def publish_auto_operation(self, current_operation):
         # Se sono in modalità automatica e l'operazione è diversa da Command.STOP, allora la ripeto all'infinito
-        if(self._current_mode == Mode.AUTO):
-            if(current_operation == Command.STOP):
-                # Se l'operazione corrente è STOP e anche l'ultima inviata è STOP, allora non invio nulla
-                if(self._last_operation == Command.STOP): 
-                    return
-                # Se l'ultima inviata non è STOP, invio STOP e setto l'ultima inviata come STOP
-                sat.publishInt8(gestureAutoChan.chanID, Command.STOP.value)
-                self._last_operation = Command.STOP
-                return
-            
-            # Se arrivo qui vuol dire che l'operazione attuale è una stringa contenente il numero, quindi pubblico all'infinito
-            self._last_operation = current_operation
-            if(self._counter == 5):
-                sat.publishInt8(gestureAutoChan.chanID, int(current_operation))
-                self._counter = 0
-            self._counter += 1
+
+        if (current_operation == self._last_operation == Command.STOP):
+            # Se l'operazione corrente è STOP e anche l'ultima inviata è STOP, allora non invio nulla
             return
-    
-        # Se arrivo qui vuol dire che sono in modalità manuale, quindi ripeto l'operazione solo se è diversa da quella precedente
-        if(self._last_operation != current_operation):
-            print("Current operation: " + str(current_operation))
-            sat.publishInt8(gestureManualChan.chanID, 
-                                 current_operation.value)
+        
+        # Se l'operazione è STOP invio il suo valore numerico, altrimenti inv
+        if (current_operation != self._last_operation):
+            operation_code = current_operation.value if current_operation == Command.STOP else current_operation
+            sat.sendServiceRequest(
+                serviceAuto.chanID, "cmndAuto", operation_code)
             self._last_operation = current_operation
+        
+
+
+        
+
 
 class ImageUtils:
     @staticmethod
@@ -358,41 +369,43 @@ class ImageUtils:
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
         cv2.putText(image, mode.name, (image.shape[1] - 150, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
-        
-        cv2.rectangle(image, (48, image.shape[0] - 58), (320, image.shape[0] - 15), (255,255,255), -1)
-        
-        cv2.putText(image, pos_string, (50, image.shape[0] - 40), 
+
+        cv2.rectangle(
+            image, (48, image.shape[0] - 58), (320, image.shape[0] - 15), (255, 255, 255), -1)
+
+        cv2.putText(image, pos_string, (50, image.shape[0] - 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
-        cv2.putText(image, orient_string, (50, image.shape[0] - 20), 
+        cv2.putText(image, orient_string, (50, image.shape[0] - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
-        
+
     @staticmethod
     def capture_image(device: cv2.VideoCapture, gesture_controller: GestureController, is_from_phone: bool):
         _, image = device.read()
 
         # Ho bisogno di sapere se l'immagine viene da DroidCAM perché in tal caso la devo ribaltare
-        if(is_from_phone):
-           image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE) 
+        if (is_from_phone):
+            image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
         # Riflette l'immagine a specchio
         image = cv2.flip(image, 1)  # 1 indica il riflesso orizzontale
-        
+
         # Rileva e disegna le mani sull'immagine
         image = gesture_controller._tracker.handsFinder(image)
-        
+
         height, width, _ = image.shape
         new_height = int(Constants.WINDOW_WIDTH * height / width)
         image = cv2.resize(image, (Constants.WINDOW_WIDTH, new_height))
-        
+
         gesture_controller._tracker.compute_landmarks(image)
-                 
+
         gesture_controller._image = image
-        
+
     @staticmethod
     def show_image(image):
-         # Mostra l'immagine risultante con le mani e i landmark rilevati
+        # Mostra l'immagine risultante con le mani e i landmark rilevati
         cv2.imshow("Video", image)
         cv2.waitKey(1)
         cv2.imwrite("image.jpg", image)
+
 
 ###############################################################################
 # SKETCH
@@ -400,11 +413,14 @@ sat = FlowSat()
 timer = sat._timer
 
 
-chronoImage = ElapsedTime() 
+chronoImage = ElapsedTime()
 # Canali da gesture
 
-gestureAutoChanName = "gesture_auto"
-gestureAutoChan = None
+# gestureAutoChanName = "gesture_auto"
+# gestureAutoChan = None
+
+serviceAutoName = "gesture_auto"
+serviceAuto = None
 
 gestureManualChanName = "gesture_manual"
 gestureManualChan = None
@@ -425,21 +441,20 @@ controller = None
 device = None
 is_from_phone = None
 
+
 def setup():
     print("[SETUP] ..")
 
     # Inizializzazione della videocamera
     global device
     global is_from_phone
-    
+
     device = cv2.VideoCapture(0)
- 
+
     if not device.isOpened():
         print("CANNOT open the camera [ID: {}]".format(0))
         return False
 
-    
-    
     is_from_phone = False
 
     global controller
@@ -454,9 +469,10 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
+    sat.setAppName("Gesture")
 
     t = TICK_LEN
-    sat.setTickTimer(t, t * 20) # Intervallo di check
+    sat.setTickTimer(t, t * 20)  # Intervallo di check
 
     sat.setNewChanCallBack(onChannelAdded)
     sat.setDelChanCallBack(onChannelRemoved)
@@ -466,6 +482,8 @@ def setup():
 
     sat.setGrabDataCallBack(onDataGrabbed)
 
+    sat.setResponseCallBack(onServiceResponse)
+
     ok = sat.connect()  # uses the env-var ROBOT_ADDRESS
 
     if ok:
@@ -473,8 +491,7 @@ def setup():
         sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
-        sat.addStreamingChannel(
-            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureAutoChanName)
+        # sat.addServiceChannel(serviceAutoName)
         sat.addStreamingChannel(
             Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureManualChanName)
         sat.addStreamingChannel(
@@ -485,53 +502,61 @@ def setup():
 
 def loop():
 
-    if gestureAutoChan and gestureManualChan and gestureModeChan:
-        if(chronoImage.stop() > 0.1):
+    if serviceAuto and gestureManualChan and gestureModeChan:
+        if (chronoImage.stop() > 0.05):
             global is_from_phone
             # Leggo l'immagine dalla videocamera
-            ImageUtils.capture_image(device, controller, is_from_phone)       
+            ImageUtils.capture_image(device, controller, is_from_phone)
 
             # Calcolo l'operazione sulle mani
             current_operation = controller.compute_operation()
-            
+
             # Scrivo l'operazione calcolata sull'immagine e la mostro
-            ImageUtils.write_on_image(controller._image, current_operation, controller._pos, controller._orient, controller._current_mode)
+            ImageUtils.write_on_image(controller._image, current_operation,
+                                      controller._pos, controller._orient, controller._current_mode)
             ImageUtils.show_image(controller._image)
 
-            if(current_operation == "Calcolando" or current_operation == "Arrivato"):
+            if (current_operation == "Calcolando" or current_operation == "Arrivato"):
                 current_operation = Command.STOP
-                
-            controller.publish_operation(current_operation)
+            
+            if controller._current_mode == Mode.MANUAL:
+                controller.publish_manual_operation(current_operation)
+            else:
+                controller.publish_auto_operation(current_operation)
+
             chronoImage.start()
-        
+
     sat.tick()
     return sat.isConnected()
+
 
 def close():
     # Rilascia la risorsa della videocamera e chiude tutte le finestre
     device.release()
     cv2.destroyAllWindows()
-    
+
 ###############################################################################
 # CALLBACKs
 
 
-def onChannelAdded(ch):
-    global gestureAutoChan
+def onChannelAdded(ch: FlowChannel):
+    global serviceAuto
     global gestureManualChan
     global gestureModeChan
     global gestureConfirmChan
     global gesturePositionChan
 
-    if (ch.name == f"guest.{gestureAutoChanName}"):
-        print("Channel ADDED: {}".format(ch.name))
-        gestureAutoChan = ch
+    if (ch.name == f"guest.{serviceAutoName}"):
+        print("Service ADDED: {}".format(ch.name))
+        serviceAuto = ch
+
     elif (ch.name == f"guest.{gestureManualChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureManualChan = ch
     elif (ch.name == f"guest.{gestureModeChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureModeChan = ch
+        controller.change_mode()
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureConfirmChan = ch
@@ -544,7 +569,6 @@ def onChannelAdded(ch):
 
 def onChannelRemoved(ch):
     print("Channel REMOVED: {}".format(ch.name))
-    
 
 
 def onStartChanPub(ch):
@@ -556,12 +580,17 @@ def onStopChanPub(ch):
 
 
 def onDataGrabbed(chanID, data):
-    if(chanID == gestureConfirmChan.chanID):
-        print("Arrivati", flush=True)
-        controller._reached = True
-    elif(chanID == gesturePositionChan.chanID):
-        pos_orient_dict = json.loads(json.loads(data))
-        controller._pos = pos_orient_dict['position']
-        controller._orient = pos_orient_dict['orientation']
+
+    if (chanID == gesturePositionChan.chanID):
+
+        x, y, controller._orient = DataBuffer(data).toFloat(3)
+        controller._pos = (x, y)
+
+
+def onServiceResponse(chanID, val):
+    # print("Arrivati", flush=True)
+    controller._reached = True
+    print("Service response RECEIVED: {}".format(val))
+
 
 ###############################################################################

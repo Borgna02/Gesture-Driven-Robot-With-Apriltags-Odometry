@@ -738,5 +738,6 @@
     // Use flake8 for linting
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
-    "cSpell.enabled": false
+    "cSpell.enabled": false,
+    "python.analysis.typeCheckingMode": "off"
 }

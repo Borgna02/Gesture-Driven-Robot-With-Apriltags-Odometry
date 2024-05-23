@@ -30,6 +30,8 @@ from PySketch.abstractflow import FlowChannel
 from PySketch.flowsync import FlowSync
 from PySketch.flowproto import FlowChanID, Variant_T, Flow_T
 from PySketch.flowsat import FlowSat
+from PySketch.databuffer import DataBuffer
+from PySketch.elapsedtime import ElapsedTime
 
 ###############################################################################
 
@@ -45,10 +47,15 @@ from timing import TICK_LEN
 sat = FlowSat()
 timer = sat._timer
 
+chronoPositionUpdate = ElapsedTime()
+
 # Canali da gesture
 
-gestureAutoChanName = "gesture_auto"
-gestureAutoChan = None
+# gestureAutoChanName = "gesture_auto"
+# gestureAutoChan = None
+
+serviceAutoName = "gesture_auto"
+serviceAuto = None
 
 gestureManualChanName = "gesture_manual"
 gestureManualChan = None
@@ -69,7 +76,7 @@ gesturePositionChan = None
 perceptionChanName = "perception"
 perceptionChan = None
 
-# Canale actions 
+# Canale actions
 
 actionChanName = "action"
 actionChan = None
@@ -107,6 +114,7 @@ class Controller:
         self._mode = Mode.MANUAL
         self._free_spaces = dict()
         self._last_action = ""
+        self._last_received_auto_cmnd = None
 
         # se diversa da "", allora significa che sto in una sessione di obstacle avoidance
         self._last_avoiding_command = ""
@@ -128,8 +136,8 @@ class Controller:
         # Invio della prima operazione all'avvio (stop)
         self._last_command = Command.STOP
         self.exec_command(Command.STOP)
-
- 
+        
+        self._responce_sent = False
 
     def connect_to_sim(self):
         print("Connecting to simulator...", flush=True)
@@ -146,10 +154,12 @@ class Controller:
         # Convertire gli angoli da radianti a gradi
         _, _, self._my_orientation = tuple(
             map(math.degrees, self._sim.getObjectOrientation(self._robot_handler, -1)))
-        
-        if(gesturePositionChan):
-            sat.publishJSON(
-                gesturePositionChan.chanID, json.dumps({"position": self._my_pos, "orientation": self._my_orientation}))
+
+        if (gesturePositionChan):
+            data = DataBuffer()
+            data.setFloat(
+                [*self._my_pos, self._my_orientation])
+            sat.publish(gesturePositionChan.chanID, data)
 
     def get_targets(self):
         for i in range(1, 6):
@@ -291,6 +301,7 @@ class Controller:
         self.exec_command(command)
 
     def handle_auto_cmnd(self, decoded_msg: str):
+        
         if (decoded_msg == Command.STOP.value):
             self._last_command = Command.STOP
             self.exec_command(Command.STOP)
@@ -304,13 +315,12 @@ class Controller:
 
                 self._last_command = Command.STOP
                 self.exec_command(Command.STOP)
-                
-                
-                sat.publishString(
-                    gestureConfirmChan.chanID, "reached")
 
+                if(not self._responce_sent):
+                    sat.sendServiceResponse(serviceAuto.chanID, last_hash, "reached")
+                    self._responce_sent = True 
             else:
-
+                self._responce_sent = False
                 # Imposta last command come la direzione migliore per avvicinarsi al target
                 self.get_dir_to_target(
                     pos_to_reach)
@@ -322,18 +332,14 @@ class Controller:
                 self.exec_command(
                     command)
 
-    def handle_perceptions(self, decoded_msg: str):
+    def handle_perceptions(self, new_perceptions : dict):
         # Aggiorno i freespaces
-        decoded_json = json.loads(json.loads(decoded_msg))
 
         # Dato che il json.loads converte le chiavi in stringhe, le trasformo in Command
-        for key, value in decoded_json.items():
-            enum_key = Command[key]
-            self._free_spaces[enum_key] = value
+        for direction, value in new_perceptions.items():
+            self._free_spaces[direction] = value
 
         # Verifico se con le nuove perceptions c'è bisogno di evitare un ostacolo
-        # command = Command.STOP
-        # if (self._controller._last_command != Command.STOP):
         command = self.avoid_obstacles()
 
         # Eseguo l'operazione
@@ -341,7 +347,7 @@ class Controller:
 
     def change_mode(self, decoded_msg: str):
         self._mode = Mode(decoded_msg)
-        print("Cambio modalità in " + str(self._mode.name), flush=True)
+        # print("Cambio modalità in " + str(self._mode.name), flush=True)
 
 
 ###############################################################################
@@ -350,7 +356,6 @@ class Controller:
 
 def setup():
     print("[SETUP] ..")
-
 
     parser = argparse.ArgumentParser(description="Nao publisher")
     parser.add_argument('sketchfile', help='Sketch program file')
@@ -361,6 +366,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
+    sat.setAppName("Controller")
 
     t = TICK_LEN
     sat.setTickTimer(t, t * 50)
@@ -373,26 +379,38 @@ def setup():
 
     sat.setGrabDataCallBack(onDataGrabbed)
 
+    sat.setRequestCallBack(onServiceRequest)
+    
     ok = sat.connect()  # uses the env-var ROBOT_ADDRESS
 
     if ok:
         # Per non mostrare il monitor degli errori
-        sat.setSpeedMonitorEnabled(False)
+        sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
-        sat.addStreamingChannel(Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureConfirmChanName)
-        sat.addStreamingChannel(Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gesturePositionChanName)
-        sat.addStreamingChannel(Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, actionChanName)
-
-
+        sat.addStreamingChannel(
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureConfirmChanName)
+        sat.addStreamingChannel(
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gesturePositionChanName)
+        sat.addStreamingChannel(
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, actionChanName)
+        if not sat.addServiceChannel(serviceAutoName):
+            print("Error adding service channel")
+            return False
 
     global controller
     controller = Controller()
-    
+
     return ok
 
 
 def loop():
+    if (chronoPositionUpdate.stop() > 1):
+        controller.update_pos_and_orient()
+        chronoPositionUpdate.start()
+
+    if (controller._mode == Mode.AUTO and controller._last_received_auto_cmnd):
+        controller.handle_auto_cmnd(controller._last_received_auto_cmnd)
 
     sat.tick()
     return sat.isConnected()
@@ -401,46 +419,52 @@ def loop():
 # CALLBACKs
 
 
-def onChannelAdded(ch):
-    global gestureAutoChan
+def onChannelAdded(ch: FlowChannel):
+    global serviceAuto
     global gestureManualChan
     global gestureModeChan
     global gestureConfirmChan
     global gesturePositionChan
     global perceptionChan
     global actionChan
-    
-    if (ch.name == f"guest.{gestureAutoChanName}"):
-        print("Channel ADDED: {}".format(ch.name))
-        gestureAutoChan = ch
-        sat.subscribeChannel(gestureAutoChan.chanID)
-        
+
+    if (ch.name == f"guest.{serviceAutoName}"):
+        serviceAuto = ch
+        print("ServiceChannel is READY: {}".format(serviceAuto.name))
+
     elif (ch.name == f"guest.{gestureManualChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureManualChan = ch
         sat.subscribeChannel(gestureManualChan.chanID)
-        
+
     elif (ch.name == f"guest.{gestureModeChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureModeChan = ch
         sat.subscribeChannel(gestureModeChan.chanID)
         
+        sync = sat.newSyncClient()
+        sync.setCurrentDbName(gestureModeChan.name)
+        print("Var", sync.getVariable("mode"))
+        controller._mode = Mode(int(sync.getVariable("mode")))
+        sync.close()
+
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureConfirmChan = ch
-        
+
     elif (ch.name == f"guest.{gesturePositionChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gesturePositionChan = ch
-        
+
     elif (ch.name == f"guest.{actionChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         actionChan = ch
-        
+
     elif (ch.name == f"guest.{perceptionChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         perceptionChan = ch
         sat.subscribeChannel(perceptionChan.chanID)
+
 
 def onChannelRemoved(ch):
     print("Channel REMOVED: {}".format(ch.name))
@@ -455,22 +479,37 @@ def onStopChanPub(ch):
 
 
 def onDataGrabbed(chanID, data):
-    
-    controller.update_pos_and_orient()
-    
-    if(chanID == gestureModeChan.chanID):
+
+    if (gestureModeChan and chanID == gestureModeChan.chanID):
         data, = struct.unpack('<b', data)
         controller.change_mode(data)
-        
-    elif(chanID == gestureManualChan.chanID):
+
+    elif (gestureManualChan and chanID == gestureManualChan.chanID):
         data, = struct.unpack('<b', data)
+        print("Command: ", Command(data).name)
         controller.handle_manual_cmnd(data)
+
+    elif (perceptionChan and chanID == perceptionChan.chanID):
+        # Estrarre i cinque bit più a destra dall'ultimo (unico) byte
+        last_five_bits = int(data[-1]) & 0b11111
+
+        # Convertire i bit in una lista di True e False
+        bits = [(last_five_bits >> i) & 1 for i in range(4, -1, -1)]
+        bits = [True if bit == 1 else False for bit in bits]
+
+        new_perceptions = {Command.LEFT: bits[0], Command.FRONTLEFT: bits[1],
+                           Command.FRONT: bits[2], Command.FRONTRIGHT: bits[3], Command.RIGHT: bits[4]}
+        controller.handle_perceptions(new_perceptions)
+
+last_hash = ""
+def onServiceRequest(chanID: FlowChanID, hash: str, cmdName: str, val):
+    # Sat could build more service-channels
+    if serviceAuto.chanID == chanID:
         
-    elif(chanID == gestureAutoChan.chanID):
-        data, = struct.unpack('<b', data)
-        controller.handle_auto_cmnd(data)
-    
-    elif(chanID == perceptionChan.chanID):
-        controller.handle_perceptions(data)
+        global last_hash
+        last_hash = hash
+        print("ServiceChannel request RECEIVED [cmdName: {}; hash: {}]: {}".format(cmdName, hash, val))
+
+        controller._last_received_auto_cmnd = val['value']
 
 ###############################################################################

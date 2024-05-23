@@ -43,11 +43,6 @@ from timing import TICK_LEN
 ###############################################################################
 # CLASSES
 
-SENSORS = ["ultrasonicSensor[1]",
-           "ultrasonicSensor[2]",
-           "ultrasonicSensor[3]",
-           "ultrasonicSensor[4]",
-           "ultrasonicSensor[5]"]
 
 
 class Directions(Enum):
@@ -60,8 +55,12 @@ class Directions(Enum):
 
 class SenseController:
 
-    def __init__(self, sensors):
-        self._sensors = sensors
+    def __init__(self):
+        self._sensors = ["ultrasonicSensor[1]",
+           "ultrasonicSensor[2]",
+           "ultrasonicSensor[3]",
+           "ultrasonicSensor[4]",
+           "ultrasonicSensor[5]"]
 
         print("Connecting to simulator...")
         self._cSim_client = RemoteAPIClient(host="localhost")
@@ -83,10 +82,9 @@ class SenseController:
             front_sensor_dists.append(round(dist, 3))
 
         # new_sensors_values = {Directions(i).name: dist for i, dist in enumerate(front_sensor_dists)}
-        
 
         # return json.dumps(new_sensors_values)
-        
+
         return front_sensor_dists
 
     # def publish_sense(self, new_sense):
@@ -101,7 +99,7 @@ class SenseController:
 
 sat = FlowSat()
 timer = sat._timer
-chronoSensePub = ElapsedTime() 
+chronoSensePub = ElapsedTime()
 
 senseChanName = "sense"
 senseChan = None
@@ -113,7 +111,7 @@ def setup():
     print("[SETUP] ..")
 
     global controller
-    controller = SenseController(SENSORS)
+    controller = SenseController()
 
     parser = argparse.ArgumentParser(description="Nao publisher")
     parser.add_argument('sketchfile', help='Sketch program file')
@@ -124,6 +122,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
+    sat.setAppName("Sense")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)
@@ -149,12 +148,12 @@ def setup():
 
 
 def loop():
-    
+
     if (senseChan):
         if (chronoSensePub.stop() > 0.3):
             new_sense = controller.sense()
             if controller._old_sense != new_sense:
-                
+
                 data = struct.pack("<fffff", *new_sense)
                 sat.publish(senseChan.chanID, data)
                 controller._old_sense = new_sense
@@ -167,7 +166,7 @@ def loop():
 # CALLBACKs
 
 
-def onChannelAdded(ch):
+def onChannelAdded(ch: FlowChannel):
 
     global senseChan
     if (ch.name == f"guest.{senseChanName}"):

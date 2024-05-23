@@ -21,7 +21,7 @@
 ##
 ###############################################################################
 
-#### Calcolo intrinsics
+# Calcolo intrinsics
 
 # int width = thresholded_image_gray.size().width;
 # int height = thresholded_image_gray.size().height;
@@ -56,7 +56,8 @@ import struct
 
 HEIGHT = 240
 WIDTH = 320
-    
+
+
 class CameraController:
 
     def __init__(self):
@@ -66,67 +67,66 @@ class CameraController:
         self._sim = self._cSim_client.getObject('sim')
         print("Connected to SIM")
         self._camera_handle = self._sim.getObject('./rgb')
-        self._colorView=self._sim.floatingViewAdd(0.69,0.9,0.2,0.2,0)
-        self._sim.adjustView(self._colorView,self._camera_handle,64)
-        
-    
+        self._colorView = self._sim.floatingViewAdd(0.69, 0.9, 0.2, 0.2, 0)
+        self._sim.adjustView(self._colorView, self._camera_handle, 64)
+
         # fov in radianti
-        fov = self._sim.getObjectFloatParam(self._camera_handle, self._sim.visionfloatparam_perspective_angle) 
-  
-        # Calcola gli intrinsics 
+        fov = self._sim.getObjectFloatParam(
+            self._camera_handle, self._sim.visionfloatparam_perspective_angle)
+
+        # Calcola gli intrinsics
         fy = HEIGHT / (2 * math.tan(fov/2))
         fx = fy * (WIDTH/HEIGHT)
         cx = WIDTH / 2
         cy = HEIGHT / 2
-        
+
         self._intrinsics = (fx, fy, cx, cy)
         self._sim.startSimulation()
 
-
     def read_image(self):
-        byte_data, resolution = self._sim.getVisionSensorImg(self._camera_handle)
-               
+        byte_data, resolution = self._sim.getVisionSensorImg(
+            self._camera_handle)
+
         # Verifica che la lunghezza dei dati sia corretta
         expected_size = resolution[0] * resolution[1] * 3  # 3 canali per RGB
         if len(byte_data) != expected_size:
-            raise ValueError(f"Dimensione dei dati non corretta: {len(byte_data)} != {expected_size}")
-        
+            raise ValueError(
+                f"Dimensione dei dati non corretta: {len(byte_data)} != {expected_size}")
+
         # Converti i byte in un array numpy
         np_array = np.frombuffer(byte_data, np.uint8)
-        
-        # Reshape l'array numpy in un'immagine
-        image = np_array.reshape((resolution[1], resolution[0], 3))  # height, width, channels
-        image = cv2.flip(image, 0)
-        
 
-  
+        # Reshape l'array numpy in un'immagine
+        # height, width, channels
+        image = np_array.reshape((resolution[1], resolution[0], 3))
+        image = cv2.flip(image, 0)
 
         # Converti l'immagine in scala di grigi
         image_bn = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        
+
         # Applica la sogliatura
         image_thresh = cv2.threshold(image_bn, 127, 255, cv2.THRESH_BINARY)[1]
-        
+
         # Trasforma l'immagine in un array numpy
         array_tresh = image_thresh.reshape((resolution[0], resolution[1],  1))
-        
+
         # Estrai i bit dalla matrice
         bits = [1 if x == 255 else 0 for x in array_tresh.flatten().tolist()]
-        
+
         # Raggruppa la lista modificata in byte (sottoliste di 8 elementi)
         bytes_list = [bits[i:i + 8] for i in range(0, len(bits), 8)]
-        
+
         # Converti ogni gruppo di 8 bit in un byte
         bytes_output = [int("".join(map(str, byte)), 2) for byte in bytes_list]
 
         # Converti la lista di byte in un bytearray
         bytearr = bytearray(bytes_output)
-        
+
         # Mostra l'immagine
         cv2.imshow("Camera", image_thresh)
         cv2.waitKey(1)
-        
-        return bytearr, resolution
+
+        return bytearr
 
     # def publish_sense(self, new_sense):
     #     if(self._old_sense != new_sense):
@@ -140,15 +140,10 @@ class CameraController:
 
 sat = FlowSat()
 timer = sat._timer
-chronoCameraPub = ElapsedTime() 
-chronoSetupPub = ElapsedTime() 
+chronoCameraPub = ElapsedTime()
 
 cameraChanName = "cam"
 cameraChan = None
-
-# TODO sostituire con pair database
-cameraSetupChanName = "cam_setup"
-cameraSetupChan = None
 
 controller = None
 
@@ -158,9 +153,6 @@ def setup():
 
     global controller
     controller = CameraController()
-    
-    
-    
 
     parser = argparse.ArgumentParser(description="Nao publisher")
     parser.add_argument('sketchfile', help='Sketch program file')
@@ -171,6 +163,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
+    # sat.setAppName("Camera")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)
@@ -187,47 +180,23 @@ def setup():
 
     if ok:
         # Per non mostrare il monitor degli errori
-        sat.setSpeedMonitorEnabled(True)
+        sat.setSpeedMonitorEnabled(True, "camera")
 
         print("[LOOP] ..")
         sat.addStreamingChannel(
             Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, cameraChanName)
-        sat.addStreamingChannel(
-            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, cameraSetupChanName)
-   
-        
-        
+
     return ok
 
 
-
 def loop():
-    # TODO trasferire su pair database
-    if(cameraSetupChan):
-        if (chronoSetupPub.stop() > 1):
-            # Invio risoluzione e intrinsics
-            data = [WIDTH, HEIGHT, *controller._intrinsics]
-            binary_data = struct.pack("<HHdddd", *data)
-            
-            sat.publish(cameraSetupChan.chanID, binary_data)
-            chronoSetupPub.start()
-            
+
     if (cameraChan):
         if (chronoCameraPub.stop() > 0.1):
-            image_bytes, resolution = controller.read_image()
-            
-            # Convertire la lista 'resolution' in bytearray
-            resolution_bytes = bytearray()
-            for value in resolution:
-                resolution_bytes.extend(value.to_bytes(4, 'big'))  # Convertire ogni intero in 4 byte
+            image_bytes = controller.read_image()
 
-            # Combinare 'image_bytes' e 'resolution_bytes' in un unico bytearray
-            combined_bytearray = bytearray(image_bytes) + resolution_bytes
-            
-            
-            
             sat.publish(cameraChan.chanID, image_bytes)
-        
+
             chronoCameraPub.start()
 
     sat.tick()
@@ -237,16 +206,19 @@ def loop():
 # CALLBACKs
 
 
-def onChannelAdded(ch):
+def onChannelAdded(ch: FlowChannel):
 
     global cameraChan
-    global cameraSetupChan
+
     if (ch.name == f"guest.{cameraChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         cameraChan = ch
-    elif (ch.name == f"guest.{cameraSetupChanName}"):
-        print("Channel ADDED: {}".format(ch.name))
-        cameraSetupChan = ch
+
+        # Comunicazione tramite pairDB
+        sat.setCurrentDbName(cameraChan.name)
+        sat.setVariable("resolution", f"{WIDTH}x{HEIGHT}")
+        sat.setVariable("intrinsics", json.dumps(controller._intrinsics))
+        sat.setCurrentDbName(sat._userName) # Reimposto al DB di default
 
 
 def onChannelRemoved(ch):

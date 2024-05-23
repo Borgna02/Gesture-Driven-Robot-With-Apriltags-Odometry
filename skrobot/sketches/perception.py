@@ -63,7 +63,7 @@ class PerceptionsController:
         self._old_perceptions = {sensor.name: True for sensor in self._sensors}
 
     def percept(self, sensor_data: dict):
-       
+
         # Crea il dizionario values
         values = {sensor: sensor_data[sensor.name] for sensor in self._sensors}
 
@@ -99,7 +99,7 @@ class PerceptionsController:
                 if sensor == Directions.RIGHT or sensor == Directions.FRONTRIGHT:
                     new_perceptions[Directions.RIGHT.name] = False
 
-        return json.dumps(new_perceptions)
+        return new_perceptions
 
 
 ###############################################################################
@@ -131,6 +131,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
+    sat.setAppName("Perception")
 
     t = TICK_LEN
     sat.setTickTimer(t, t * 50)
@@ -147,7 +148,7 @@ def setup():
 
     if ok:
         # Per non mostrare il monitor degli errori
-        sat.setSpeedMonitorEnabled(False)
+        sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
         sat.addStreamingChannel(
@@ -193,20 +194,27 @@ def onStopChanPub(ch):
 def onDataGrabbed(chanID, data):
 
     if (chanID == senseChan.chanID):
-  
-        
+
         # Spacchetta la stringa JSON
         sensor_data = struct.unpack("<fffff", data)
-        sensor_data = {sensor.name: value for sensor, value in zip(controller._sensors, sensor_data)}
-
+        sensor_data = {sensor.name: value for sensor,
+                       value in zip(controller._sensors, sensor_data)}
 
         # Calcolo le perceptions basandomi sui valori dei sensori
         new_perceptions = controller.percept(sensor_data)
 
         if (perceptionChan and controller._old_perceptions != new_perceptions):
-            # TODO convertire il JSON in un byte contenente i cinque bit che rappresentano le cinque direzioni (LEFT, FRONTLEFT, FRONT, FRONTRIGHT, RIGHT) e i valori True/False
+
             print(new_perceptions)
-            sat.publishJSON(perceptionChan.chanID, new_perceptions)
+            bits = [1 if val == True else 0 for val in new_perceptions.values()]
+
+            byte = 0
+
+            # Gli ultimi cinque bit del byte rappresentano le perceptions (1 = Libero, 0 = Occupato)
+            for bit in bits:
+                byte = (byte << 1) | bit
+
+            sat.publishInt8(perceptionChan.chanID, byte)
             controller._old_perceptions = new_perceptions
 
 ###############################################################################
