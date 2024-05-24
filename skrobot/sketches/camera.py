@@ -67,20 +67,32 @@ class CameraController:
         self._sim = self._cSim_client.getObject('sim')
         print("Connected to SIM")
         self._camera_handle = self._sim.getObject('./rgb')
+        self._camera_height = self._sim.getObjectPosition(self._camera_handle)[
+            2]
         self._colorView = self._sim.floatingViewAdd(0.69, 0.9, 0.2, 0.2, 0)
         self._sim.adjustView(self._colorView, self._camera_handle, 64)
 
+        # Larghezza immagine
+        self._width = self._sim.getObjectInt32Param(
+            self._camera_handle, self._sim.visionintparam_resolution_x)
+        # Larghezza immagine
+        self._height = self._sim.getObjectInt32Param(
+            self._camera_handle, self._sim.visionintparam_resolution_y)
+        
+        print("Res: ", self._width, self._height)
+
         # fov in radianti
-        fov = self._sim.getObjectFloatParam(
+        self._fov = self._sim.getObjectFloatParam(
             self._camera_handle, self._sim.visionfloatparam_perspective_angle)
 
         # Calcola gli intrinsics
-        fy = HEIGHT / (2 * math.tan(fov/2))
-        fx = fy * (WIDTH/HEIGHT)
-        cx = WIDTH / 2
-        cy = HEIGHT / 2
+        fy = self._height / (2 * math.tan(self._fov/2))
+        fx = fy * (self._width/self._height)
+        cx = self._width / 2
+        cy = self._height / 2
 
         self._intrinsics = (fx, fy, cx, cy)
+        
         self._sim.startSimulation()
 
     def read_image(self):
@@ -163,7 +175,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
-    # sat.setAppName("Camera")
+    sat.setAppName("Camera")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)
@@ -180,7 +192,7 @@ def setup():
 
     if ok:
         # Per non mostrare il monitor degli errori
-        sat.setSpeedMonitorEnabled(True, "camera")
+        sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
         sat.addStreamingChannel(
@@ -216,9 +228,12 @@ def onChannelAdded(ch: FlowChannel):
 
         # Comunicazione tramite pairDB
         sat.setCurrentDbName(cameraChan.name)
-        sat.setVariable("resolution", f"{WIDTH}x{HEIGHT}")
+        sat.setVariable(
+            "resolution", f"{controller._width}x{controller._height}")
         sat.setVariable("intrinsics", json.dumps(controller._intrinsics))
-        sat.setCurrentDbName(sat._userName) # Reimposto al DB di default
+        sat.setVariable("camera_height", controller._camera_height)
+        sat.setVariable("fov", controller._fov)
+        sat.setCurrentDbName(sat._userName)  # Reimposto al DB di default
 
 
 def onChannelRemoved(ch):

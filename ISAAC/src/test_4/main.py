@@ -178,6 +178,9 @@ class AprilTagsManager:
 
             break
 
+# x = 0.02593
+# y = 0.03537
+
 
 class SimHandler:
 

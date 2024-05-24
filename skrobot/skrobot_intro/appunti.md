@@ -412,3 +412,8 @@ Per installare coppeliaSim su ubuntu 22.04 bisogna:
 ## Implementazione API
 
 Per implementare le API in Python occorre innanzitutto installare il pacchetto da pip con ```pip install coppeliasim_zmqremoteapi_client```.
+
+
+# AprilTags
+
+1. ```pip install apriltag```

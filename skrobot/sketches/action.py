@@ -70,15 +70,15 @@ class Controller:
          
         match command:
             case Command.FRONT:
-                self.set_speeds(1, 1)
+                self.set_speeds(2, 2)
             case Command.FRONTLEFT:
-                self.set_speeds(1, 0.5)
+                self.set_speeds(2, 1)
             case Command.FRONTRIGHT:
-                self.set_speeds(0.5, 1)
+                self.set_speeds(1, 2)
             case Command.RIGHT:
-                self.set_speeds(-0.25, 0.25)
+                self.set_speeds(-0.5, 0.5)
             case Command.LEFT:
-                self.set_speeds(0.25, -0.25)
+                self.set_speeds(0.5, -0.5)
             case Command.STOP:
                 self.set_speeds(0, 0)
 
