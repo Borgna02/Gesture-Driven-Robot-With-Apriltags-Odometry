@@ -91,7 +91,8 @@ class CameraController:
         cx = self._width / 2
         cy = self._height / 2
 
-        self._intrinsics = (fx, fy, cx, cy)
+        # self._intrinsics = (fx, fy, cx, cy)
+        self._intrinsics = (1270.54082647, 1924.86532236,  276.40022973, 252.9015922)
         
         self._sim.startSimulation()
 

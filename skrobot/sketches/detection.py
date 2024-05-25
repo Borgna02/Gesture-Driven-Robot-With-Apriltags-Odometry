@@ -29,6 +29,7 @@ import struct
 
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import cv2
+import pandas as pd
 from PySketch.abstractflow import FlowChannel
 from PySketch.flowsync import FlowSync
 from PySketch.flowproto import FlowChanID, Variant_T, Flow_T
@@ -42,6 +43,9 @@ import argparse
 import numpy as np
 from timing import TICK_LEN
 from dt_apriltags import Detection, Detector
+import pickle
+import zipfile
+
 
 ###############################################################################
 # CLASSES
@@ -64,17 +68,18 @@ class DetectionController:
 
         # options = apriltag.DetectorOptions(families="tag36h11")
         # detector = apriltag.Detector(options)
-        
+
         at_detector = Detector(families='tag36h11',
-                       nthreads=1,
-                       quad_decimate=1.0,
-                       quad_sigma=0.0,
-                       refine_edges=1,
-                       decode_sharpening=0.25,
-                       debug=0)
-        
+                               nthreads=1,
+                               quad_decimate=1.0,
+                               quad_sigma=0.0,
+                               refine_edges=1,
+                               decode_sharpening=0.25,
+                               debug=0)
+
         # results:list[Detection] = at_detector.detect(image, True, self._intrinsics, 0.06)
-        results:list[Detection] = at_detector.detect(image, True, self._intrinsics, 0.06)
+        results: list[Detection] = at_detector.detect(
+            image, True, self._intrinsics, 0.06)
 
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
@@ -83,7 +88,8 @@ class DetectionController:
             # extract the bounding box (x, y)-coordinates for the AprilTag
             # and convert each of the (x, y)-coordinate pairs to integers
             for idx in range(len(tag.corners)):
-                cv2.line(image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
+                cv2.line(image, tuple(
+                    tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
 
             # draw the center (x, y)-coordinates of the AprilTag
             (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
@@ -91,60 +97,52 @@ class DetectionController:
 
             # Calcolo in percentuale dove si trova il centro del tag rispetto alla larghezza dell'immagine
             x_center_perc = cX / self._width
-            
+
             # Calcolo il phi scalando il valore tra -180 e 180 gradi
             phi = round(360 * x_center_perc - 180, 3)
-            
-            
-            # pose_array = at_detector.getRelativeTranslationRotation(
-            #     r, self._intrinsics, tag_size=0.06)
 
-            # print("Pose array: ", pose_array)
 
-            # pose = np.array(pose_array[0])
-
-            # Matrice di rotazione (prime tre righe)
-            # rotation_matrix = pose[:3, :3]
+            # Matrice di rotazione
             rotation_matrix = tag.pose_R
 
-            # Vettore di traslazione (ultima colonna), ovvero coordinate del tag rispetto alla camera
-            # translation_vector = pose[:3, 3]
+            # Vettore di traslazione, ovvero coordinate del tag rispetto alla camera
             translation_vector = tag.pose_t
 
-            # phi = math.atan2(
-            #     translation_vector[1], translation_vector[0]) * RADIANS_COEFF
 
             norm = round(np.linalg.norm(translation_vector), 2)
             # Coordinate globali del tag
-            tag_coords = np.array([*sim.getObjectPosition(sim.getObject("./tag0")), 1])
+            tag_coords = np.array(
+                [*sim.getObjectPosition(sim.getObject("./tag0")), 1])
             cam_coords = np.array(
                 [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
-            
+
             plane_distance_sq = norm ** 2 - self._camera_height ** 2
             if plane_distance_sq < 0:
                 plane_distance_sq = 0  # Imposta a zero se il valore è negativo
 
             plane_distance = round(math.sqrt(plane_distance_sq), 2)
 
-            plane_distance_manual_sq = np.linalg.norm(tag_coords - cam_coords) ** 2 - self._camera_height ** 2
+            plane_distance_manual_sq = np.linalg.norm(
+                tag_coords - cam_coords) ** 2 - self._camera_height ** 2
             if plane_distance_manual_sq < 0:
                 plane_distance_manual_sq = 0  # Imposta a zero se il valore è negativo
 
-            plane_distance_manual = round(math.sqrt(plane_distance_manual_sq), 2)
+            plane_distance_manual = round(
+                math.sqrt(plane_distance_manual_sq), 2)
 
-            print("Distanza: ", plane_distance, ", Manual dist: " , plane_distance_manual, ", Diff: ", round(abs(plane_distance - plane_distance_manual), 2))
-            
-             # Aggiungi i valori al file CSV
-            with open('distanze.csv', mode='a', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow([plane_distance, plane_distance_manual, round(abs(plane_distance - plane_distance_manual), 2), cX, cY])
+            predicted_distance = round(model.predict(pd.DataFrame({"distanza_calcolata": [
+                                       plane_distance], "tag_center_x": [cX], "tag_center_y": [cY]}))[0], 2)
 
-            
+            print(f"Distanza: {plane_distance}, Manual dist: {plane_distance_manual}, Pred. dist: {predicted_distance}, Diff: {round(abs(plane_distance - plane_distance_manual), 2)}")
+
+            #  Aggiungi i valori al file CSV
+            # with open('distanze_predette.csv', mode='a', newline='') as file:
+            #     writer = csv.writer(file)
+            #     writer.writerow([plane_distance, plane_distance_manual, round(abs(plane_distance - plane_distance_manual), 2), predicted_distance, round(abs(plane_distance_manual - predicted_distance), 2)])
+
             # print(translation_vector, rotation_matrix)
 
-
             # print("Phi: ", phi)
-
 
         return image
 
@@ -185,9 +183,18 @@ cameraChan = None
 controller = None
 sim = None
 
+model = None
+
 
 def setup():
     print("[SETUP] ..")
+    parser = argparse.ArgumentParser(description="Nao publisher")
+    parser.add_argument('sketchfile', help='Sketch program file')
+    parser.add_argument(
+        '--user', help='Flow-network username', default='guest')
+    parser.add_argument(
+        '--password', help='Flow-network password', default='password')
+    args = parser.parse_args()
 
     global controller
     global sim
@@ -197,13 +204,26 @@ def setup():
     sim = RemoteAPIClient(host="localhost").getObject('sim')
     print("Connected to SIM")
 
-    parser = argparse.ArgumentParser(description="Nao publisher")
-    parser.add_argument('sketchfile', help='Sketch program file')
-    parser.add_argument(
-        '--user', help='Flow-network username', default='guest')
-    parser.add_argument(
-        '--password', help='Flow-network password', default='password')
-    args = parser.parse_args()
+    global model
+
+    # Percorso del file ZIP che contiene il modello
+    zip_path = 'modello.zip'
+
+    # Estrarre il file modello.pkl dall'archivio ZIP
+    with zipfile.ZipFile(zip_path, 'r') as zipf:
+        zipf.extract('modello.pkl', path='.')
+
+    # Caricare il modello dal file modello.pkl
+    with open('modello.pkl', 'rb') as file:
+        model = pickle.load(file)
+
+    # Utilizzare il modello
+    # Ad esempio, supponiamo che il modello sia un classificatore e vogliamo fare una previsione
+    # result = model.predict(data)
+
+    # Rimozione del file modello.pkl dopo l'uso (opzionale)
+    import os
+    os.remove('modello.pkl')
 
     sat.setLogin(args.user, args.password)
     sat.setAppName("Detection")

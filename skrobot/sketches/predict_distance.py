@@ -14,6 +14,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR, NuSVR
 from sklearn.tree import DecisionTreeRegressor
 
+import pickle
+import zipfile
 
 def splid_df_by_perc(train_perc: float, X: pd.DataFrame, y: pd.DataFrame):
     """Divides X and y in train and test by train size in percentage.
@@ -55,7 +57,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42)
 
 
-def train_and_evaluate(model, model_name, X_train, y_train, X_test, y_test, print=False):
+def train_and_evaluate(model, model_name, X_train, y_train, X_test, y_test, do_print=False):
     """Train and evaluate a model on the given data.
 
     Args:
@@ -77,13 +79,13 @@ def train_and_evaluate(model, model_name, X_train, y_train, X_test, y_test, prin
 
     # Valuta il modello sul set di test
     test_predictions = model.predict(X_test)
-    test_rmse = mean_squared_error(y_test, test_predictions)
-    test_r2 = r2_score(y_test, test_predictions)
-    test_mae = mean_absolute_error(y_test, test_predictions)
+    test_rmse = round(mean_squared_error(y_test, test_predictions),4)
+    test_r2 = round(r2_score(y_test, test_predictions),4)
+    test_mae = round(mean_absolute_error(y_test, test_predictions),4)
 
-    if print:
+    if do_print:
         print(f"Metriche {model_name} sul set di test:",
-            test_rmse, test_r2, test_mae)
+              test_rmse, test_r2, test_mae)
 
     return test_predictions
 
@@ -108,15 +110,16 @@ models = [
     # (TheilSenRegressor(), "Theil-Sen Regressor"),
     # (KernelRidge(), "Kernel Ridge"),
     # (SVR(), "Support Vector Regressor"),
-    (NuSVR(), "Nu Support Vector Regressor"),
+    # (NuSVR(), "Nu Support Vector Regressor"),
     # (GaussianProcessRegressor(), "Gaussian Process Regressor"),
     # (DecisionTreeRegressor(), "Decision Tree Regressor"),
-    (RandomForestRegressor(), "Random Forest Regressor"),
-    (GradientBoostingRegressor(), "Gradient Boosting Regressor"),
+    (RandomForestRegressor(criterion='absolute_error',
+     n_estimators=200, n_jobs=-1), "Random Forest Regressor"),
+    # (GradientBoostingRegressor(), "Gradient Boosting Regressor"),
     # (AdaBoostRegressor(), "AdaBoost Regressor"),
-    (ExtraTreesRegressor(), "Extra Trees Regressor"),
-    (HistGradientBoostingRegressor(), "Histogram-Based Gradient Boosting Regressor"),
-    (KNeighborsRegressor(), "K-Neighbors Regressor"),
+    # (ExtraTreesRegressor(), "Extra Trees Regressor"),
+    # (HistGradientBoostingRegressor(), "Histogram-Based Gradient Boosting Regressor"),
+    # (KNeighborsRegressor(), "K-Neighbors Regressor"),
     # (MLPRegressor(), "Multi-layer Perceptron Regressor"),
     # (TweedieRegressor(), "Tweedie Regressor")
 ]
@@ -129,31 +132,49 @@ df_predetto = pd.DataFrame({'Distanza Reale': y_test, 'Distanza Calcolata': X_te
 string_output = f"Errore medio calcolato dagli aprilTags: {round(np.mean(df_predetto['Errore Calcolata']), 5)} m"
 
 plt.plot(range(len(y_train), len(y_train) + len(y_test)),
-         np.array(y_test), color='blue', label='Test True Values')
+         np.array(y_test), color='orange', label='Test True Values', marker='.')
 
 for model in models:
     current_predictions = train_and_evaluate(
-        model[0], model[1], X_train, y_train, X_test, y_test)
+        model[0], model[1], X_train, y_train, X_test, y_test, do_print=True)
     df_predetto[f'Distanza Predetta {model[1]}'] = np.round(
         current_predictions, 2)
     plt.plot(range(len(y_train), len(y_train) + len(y_test)),
-             np.array(current_predictions), linestyle='--', label=f'Test Predictions {model[1]}')
-    df_predetto[f'Errore Predetta {model[1]}'] = np.round(abs(current_predictions - y_test), 2)
-    
+             np.array(current_predictions), linestyle='--', label=f'Test Predictions {model[1]}', marker='.')
+    df_predetto[f'Errore Predetta {model[1]}'] = np.round(
+        abs(current_predictions - y_test), 2)
+
     string_output += f"\nErrore medio predetto {model[1]} : {round(np.mean(df_predetto[f'Errore Predetta {model[1]}']), 5)} m"
 
 
+
+    # Supponendo che 'model' sia la variabile che contiene il tuo modello
+    # Modifica per salvare il modello zippato
+    with open('modello.pkl', 'wb') as file:
+        pickle.dump(model[0], file)
+
+    # Creazione di un archivio ZIP e aggiunta del file 'modello.pkl'
+    with zipfile.ZipFile('modello.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write('modello.pkl', arcname='modello.pkl')
+
+    # Rimozione del file pickle dopo averlo zippato (opzionale)
+    import os
+    os.remove('modello.pkl')
+
+
+plt.plot(range(len(y_train), len(y_train) + len(y_test)),
+         np.array(X_test['distanza_calcolata']), color='purple', label='AprilTag calculated distance', marker='.')
 # Aggiungi titoli e etichette
-plt.title('True Values vs Predictions')
-plt.xlabel('Sample Index')
-plt.ylabel('Distance Real')
-plt.legend()
+plt.title('True Values vs Predictions', fontsize=24)
+plt.xlabel('Sample Index', fontsize=18)
+plt.ylabel('Distance Real', fontsize=18)
+plt.legend(fontsize=18)
 
 # Mostra il grafico
-# plt.show()
+plt.show()
 
 
-df_predetto.to_csv('distanze_predette.csv', index=False)
+# df_predetto.to_csv('distanze_predette.csv', index=False)
 
 
 print(string_output)
