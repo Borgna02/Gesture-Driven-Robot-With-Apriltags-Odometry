@@ -98,6 +98,10 @@ class PerceptionsController:
                     new_perceptions[Directions.LEFT.name] = False
                 if sensor == Directions.RIGHT or sensor == Directions.FRONTRIGHT:
                     new_perceptions[Directions.RIGHT.name] = False
+             
+        # Se tutte le perceptions sono False, sblocco la direzione LEFT perché altrimenti il robot rimarrebbe bloccato    
+        if all(value == False for value in new_perceptions.values()):
+            new_perceptions[Directions.LEFT.name] = True
 
         return new_perceptions
 
