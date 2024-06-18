@@ -66,8 +66,6 @@ class DetectionController:
         if (not self._intrinsics):
             return None
 
-        # options = apriltag.DetectorOptions(families="tag36h11")
-        # detector = apriltag.Detector(options)
 
         at_detector = Detector(families='tag36h11',
                                nthreads=1,
@@ -77,7 +75,6 @@ class DetectionController:
                                decode_sharpening=0.25,
                                debug=0)
 
-        # results:list[Detection] = at_detector.detect(image, True, self._intrinsics, 0.06)
         results: list[Detection] = at_detector.detect(
             image, True, self._intrinsics, 0.06)
 
@@ -95,54 +92,79 @@ class DetectionController:
             (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
             cv2.circle(image, (cX, cY), 5, (0, 0, 255), -1)
 
+            ###################### Calcolo dell'angolo phi ##############################
+
             # Calcolo in percentuale dove si trova il centro del tag rispetto alla larghezza dell'immagine
             x_center_perc = cX / self._width
 
-            # Calcolo il phi scalando il valore tra -180 e 180 gradi
-            phi = round(360 * x_center_perc - 180, 3)
+            # Calcolo il phi scalando il valore tra -FOV_X/2 e FOV_X/2 gradi
+            PHI = round(self._fov * x_center_perc - self._fov/2, 3)
 
-
-            # Matrice di rotazione
-            rotation_matrix = tag.pose_R
-
+     
+            ###################### Calcolo della distanza ################################
+            
             # Vettore di traslazione, ovvero coordinate del tag rispetto alla camera
             translation_vector = tag.pose_t
 
-
+            # Calcolo della distanza tramite la libreria
             norm = round(np.linalg.norm(translation_vector), 2)
-            # Coordinate globali del tag
-            tag_coords = np.array(
-                [*sim.getObjectPosition(sim.getObject("./tag0")), 1])
-            cam_coords = np.array(
-                [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
-
+            
+            # Calcolo della proiezione della distanza sul piano orizzontale
             plane_distance_sq = norm ** 2 - self._camera_height ** 2
             if plane_distance_sq < 0:
                 plane_distance_sq = 0  # Imposta a zero se il valore è negativo
 
             plane_distance = round(math.sqrt(plane_distance_sq), 2)
 
-            plane_distance_manual_sq = np.linalg.norm(
-                tag_coords - cam_coords) ** 2 - self._camera_height ** 2
-            if plane_distance_manual_sq < 0:
-                plane_distance_manual_sq = 0  # Imposta a zero se il valore è negativo
-
-            plane_distance_manual = round(
-                math.sqrt(plane_distance_manual_sq), 2)
-
-            predicted_distance = round(model.predict(pd.DataFrame({"distanza_calcolata": [
+            # Calcolo della distanza tramite il modello di ML
+            DISTANCE = round(model.predict(pd.DataFrame({"distanza_calcolata": [
                                        plane_distance], "tag_center_x": [cX], "tag_center_y": [cY]}))[0], 2)
 
-            print(f"Distanza: {plane_distance}, Manual dist: {plane_distance_manual}, Pred. dist: {predicted_distance}, Diff: {round(abs(plane_distance - plane_distance_manual), 2)}")
 
-            #  Aggiungi i valori al file CSV
-            # with open('distanze_predette.csv', mode='a', newline='') as file:
-            #     writer = csv.writer(file)
-            #     writer.writerow([plane_distance, plane_distance_manual, round(abs(plane_distance - plane_distance_manual), 2), predicted_distance, round(abs(plane_distance_manual - predicted_distance), 2)])
+            ######################## Calcolo dello yaw ####################################
+            old_corners = list(tag.corners)
+            
+            y_min = min(old_corners, key=lambda x: x[1])[1]
+            y_max = max(old_corners, key=lambda x: x[1])[1]
+            x_min = min(old_corners, key=lambda x: x[0])[0]
+            x_max = max(old_corners, key=lambda x: x[0])[0]
+            
+            box_width = x_max - x_min
+            box_height = y_max - y_min
+            
+            # Sottraggo a tutte le coordinate x_min e y_min per avere un box centrato in 0,0
+            new_corners = [(x - x_min, y - y_min) for x, y in old_corners]
+            
+            # Inserisco nella variabile left_side_point l'indice del punto con ascissa zero
+            left_side_point = new_corners.index(
+                min(new_corners, key=lambda x: x[0]))
 
-            # print(translation_vector, rotation_matrix)
+            # Creo anche le variabili per gli altri lati
+            bottom_side_point = (left_side_point + 1) % 4
+            right_side_point = (left_side_point + 2) % 4
+            top_side_point = (left_side_point + 3) % 4
+            
+            # Eseguo l'interpolazione sui lati
+            new_corners = [None] * 4
+            new_corners[top_side_point] = old_corners[top_side_point]
+            new_corners[bottom_side_point] = [old_corners[bottom_side_point][0], box_width]
+            new_corners[right_side_point] = [old_corners[right_side_point][1], box_width * old_corners[right_side_point][1] / box_height]
+            new_corners[left_side_point] = [old_corners[left_side_point][1], box_width * old_corners[left_side_point][1] / box_height]
+            
+            # Calcolo il vettore dal bottom_sx al top_sx
+            vector = np.array(new_corners[2]) - np.array(new_corners[1])
+            
+            
+            abs_yaw = np.round(np.arccos(-vector.y / np.sqrt(vector.x ** 2 + vector.y ** 2)) * RADIANS_COEFF * 100) / 100
+            
+            # Determinazione del segno dello yaw
+            yaw_sign = 1 if new_corners[2].x > new_corners[1].x else -1
 
-            # print("Phi: ", phi)
+            # Calcolo dello yaw
+            yaw = yaw_sign * abs_yaw
+
+            exit()
+            
 
         return image
 
