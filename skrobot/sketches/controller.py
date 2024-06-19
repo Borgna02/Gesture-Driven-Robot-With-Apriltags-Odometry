@@ -83,8 +83,8 @@ actionChan = None
 
 # Canale distYawPhi
 
-distYawPhiChanName = "dist_yaw_phi"
-distYawPhiChan = None
+posOrientChanName = "position_orientation"
+posOrientChan = None
 
 
 controller = None
@@ -151,21 +151,23 @@ class Controller:
         print('Connected', flush=True)
         self._robot_handler = self._sim.getObject("./PioneerP3DX")
 
-    def update_pos_and_orient(self):
-        robot_x, robot_y, _ = self._sim.getObjectPosition(self._robot_handler)
-        # Aggiorno la posizione attuale del robot
-        self._my_pos = (robot_x, robot_y)
+    def update_pos_and_orient(self, pos=None, orient=None):
+        # robot_x, robot_y, _ = self._sim.getObjectPosition(self._robot_handler)
+        # # Aggiorno la posizione attuale del robot
+        # self._my_pos = (robot_x, robot_y)
 
-        # Convertire gli angoli da radianti a gradi
-        _, _, self._my_orientation = tuple(
-            map(math.degrees, self._sim.getObjectOrientation(self._robot_handler, -1)))
+        # # Convertire gli angoli da radianti a gradi
+        # _, _, self._my_orientation = tuple(
+        #     map(math.degrees, self._sim.getObjectOrientation(self._robot_handler, -1)))
+        self._my_pos = pos
+        self._my_orientation = orient
 
         if (gesturePositionChan):
             data = DataBuffer()
             data.setFloat(
                 [*self._my_pos, self._my_orientation])
             sat.publish(gesturePositionChan.chanID, data)
-
+# TODO capire perché non va la guida automatica
     def get_targets(self):
         for i in range(1, 6):
             # Ottengo la posizione (in metri) degli obiettivi relativa all'origine della scena
@@ -412,9 +414,9 @@ def setup():
 
 
 def loop():
-    if (chronoPositionUpdate.stop() > 1):
-        controller.update_pos_and_orient()
-        chronoPositionUpdate.start()
+    # if (chronoPositionUpdate.stop() > 1):
+    #     controller.update_pos_and_orient()
+    #     chronoPositionUpdate.start()
 
     if (controller._mode == Mode.AUTO and controller._last_received_auto_cmnd):
         controller.handle_auto_cmnd(controller._last_received_auto_cmnd)
@@ -434,7 +436,7 @@ def onChannelAdded(ch: FlowChannel):
     global gesturePositionChan
     global perceptionChan
     global actionChan
-    global distYawPhiChan
+    global posOrientChan
 
     if (ch.name == f"guest.{serviceAutoName}"):
         serviceAuto = ch
@@ -473,10 +475,10 @@ def onChannelAdded(ch: FlowChannel):
         perceptionChan = ch
         sat.subscribeChannel(perceptionChan.chanID)
         
-    elif (ch.name == f"guest.{distYawPhiChanName}"):
+    elif (ch.name == f"guest.{posOrientChanName}"):
         print("Channel ADDED: {}".format(ch.name))
-        distYawPhiChan = ch
-        sat.subscribeChannel(distYawPhiChan.chanID)
+        posOrientChan = ch
+        sat.subscribeChannel(posOrientChan.chanID)
 
 
 def onChannelRemoved(ch):
@@ -513,6 +515,9 @@ def onDataGrabbed(chanID, data):
         new_perceptions = {Command.LEFT: bits[0], Command.FRONTLEFT: bits[1],
                            Command.FRONT: bits[2], Command.FRONTRIGHT: bits[3], Command.RIGHT: bits[4]}
         controller.handle_perceptions(new_perceptions)
+    elif (posOrientChan and chanID == posOrientChan.chanID):
+        x, y, orientation = struct.unpack('<fff', data)
+        controller.update_pos_and_orient((x, y), orientation)
     
 
 

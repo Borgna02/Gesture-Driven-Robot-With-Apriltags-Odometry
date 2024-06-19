@@ -66,12 +66,14 @@ class TagHandler:
         self._tags = []
         # Itero sulle righe
         i = -self._arena_size[0]/2
+        k = 0 # variabile per l'id
         while i <= self._arena_size[0]/2:
             
             # Itero sulle colonne
             j = -self._arena_size[1]/2
             while j <= self._arena_size[1]/2:
                 self._tags.append({
+                    'id': k,
                     'x': j,
                     'y': i,
                     'dist': 0,
@@ -80,6 +82,7 @@ class TagHandler:
                     'is_visible': False
                 })
                 j += self._space_between_tags
+                k += 1
             i += self._space_between_tags
             
         # print(self._tags)
@@ -93,7 +96,7 @@ class TagHandler:
         # Se non vedo nessun tag, id è -1 e quindi nessun tag viene posto come visibile
         new_tags_list = []
         for i, tag in enumerate(self._tags):
-            new_tag = {'x': tag['x'], 'y': tag['y'], 'dist': None,
+            new_tag = {'id' : i, 'x': tag['x'], 'y': tag['y'], 'dist': None,
                        'yaw': None, 'phi': None, 'is_visible': False}
             if i == id:
                 new_tag['dist'] = dist
@@ -127,34 +130,39 @@ class TagHandler:
 
         dist = round(tag['dist'], 3)
         yaw = round(tag['yaw'], 3)
-        camera_x = tag['x']
-        camera_y = tag['y']
+     
+        
+        # Estrai le coordinate del punto T
+        Tx = tag['x']
+        Ty = tag['y']
+        
+        # Converti l'angolo yaw da gradi a radianti
+        yaw = math.radians(yaw)
+        
+        # Calcola le coordinate del punto C
+        x_delta = dist * math.sin(yaw)
+        Cx = Tx + x_delta
+        y_delta = dist * math.cos(yaw)
+        Cy = Ty + y_delta
+        
+        # Recupero gli x_delta e y_delta reali
 
-        # Calcolo dell'angolo vicino all'origine del triangolo rettangolo
-        beta = (abs(yaw) % 90)
-        if (beta != 0):
-            # Calcolo dei cateti
-            a = dist * math.cos(math.radians(beta))
-            b = math.sqrt(dist ** 2 - a ** 2)
-            if (yaw >= -90 and yaw <= 90):
-                camera_x += math.copysign(1, yaw) * b
-                camera_y += a
-            else:
-                camera_x += math.copysign(1, yaw) * a
-                camera_y -= b
-        else:
-            # tratto separatamente i casi limite
-            if (yaw == 0):
-                camera_y += dist
-            elif (yaw == 90):
-                camera_x += dist
-            elif (abs(yaw) == 180):
-                camera_y -= dist
-            else:
-                camera_x -= dist
+        cam_coords = np.array(
+                [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
 
-        camera_x = round(camera_x, 3)
-        camera_y = round(camera_y, 3)
+        
+        # Calcola la distanza tra cam_coords e C
+        error = np.linalg.norm(cam_coords[:2] - np.array([Cx, Cy]))
+        
+        # Salva questi dati su due file csv separati, uno per x e uno per y
+        with open('error.csv', mode='a') as file:
+            writer = csv.writer(file)
+            writer.writerow([Cx, Cy, cam_coords[0], cam_coords[1], error])
+            
+       
+        
+        camera_x = round(Cx, 3)
+        camera_y = round(Cy, 3)
 
         ##
         # Calcolo orientamento
@@ -200,9 +208,9 @@ class TagHandler:
 
 
 
-        # TODO Comunico a gesture la nuova posizione in modo da stamparla sull'interfaccia
-        # self._mqtt_manager._client.publish(
-        #     "/position", dumps({"position": self._my_pos, "orientation": self._my_orientation}))
+        data = struct.pack("<fff", *self._my_pos, self._my_orientation)
+        sat.publish(posOrientChan.chanID, data)
+
 
 
 ###############################################################################
