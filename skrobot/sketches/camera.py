@@ -75,7 +75,7 @@ class CameraController:
         # Larghezza immagine
         self._width = self._sim.getObjectInt32Param(
             self._camera_handle, self._sim.visionintparam_resolution_x)
-        # Larghezza immagine
+        # Altezza immagine
         self._height = self._sim.getObjectInt32Param(
             self._camera_handle, self._sim.visionintparam_resolution_y)
         
@@ -85,14 +85,14 @@ class CameraController:
         self._fov = self._sim.getObjectFloatParam(
             self._camera_handle, self._sim.visionfloatparam_perspective_angle)
 
-        # Calcola gli intrinsics
+        # # Calcola gli intrinsics
         fy = self._height / (2 * math.tan(self._fov/2))
         fx = fy * (self._width/self._height)
         cx = self._width / 2
         cy = self._height / 2
 
-        # self._intrinsics = (fx, fy, cx, cy)
-        self._intrinsics = (1270.54082647, 1924.86532236,  276.40022973, 252.9015922)
+        self._intrinsics = (fx, fy, cx, cy)
+    
         
         self._sim.startSimulation()
 
@@ -140,12 +140,6 @@ class CameraController:
         cv2.waitKey(1)
 
         return bytearr
-
-    # def publish_sense(self, new_sense):
-    #     if(self._old_sense != new_sense):
-    #         # print("New sense are: " + new_sense.replace("ultrasonicSensor","sens_id"), flush=True)
-    #         self._client.publish("/sensors", new_sense) # publish message
-    #         self._old_sense = new_sense
 
 
 ###############################################################################

@@ -45,6 +45,8 @@ from timing import TICK_LEN
 from dt_apriltags import Detection, Detector
 import pickle
 import zipfile
+import matplotlib.pyplot as plt
+
 
 
 ###############################################################################
@@ -65,7 +67,6 @@ class DetectionController:
     def detect(self, image):
         if (not self._intrinsics):
             return None
-
 
         at_detector = Detector(families='tag36h11',
                                nthreads=1,
@@ -100,15 +101,14 @@ class DetectionController:
             # Calcolo il phi scalando il valore tra -FOV_X/2 e FOV_X/2 gradi
             PHI = round(self._fov * x_center_perc - self._fov/2, 3)
 
-     
             ###################### Calcolo della distanza ################################
-            
+
             # Vettore di traslazione, ovvero coordinate del tag rispetto alla camera
             translation_vector = tag.pose_t
 
             # Calcolo della distanza tramite la libreria
             norm = round(np.linalg.norm(translation_vector), 2)
-            
+
             # Calcolo della proiezione della distanza sul piano orizzontale
             plane_distance_sq = norm ** 2 - self._camera_height ** 2
             if plane_distance_sq < 0:
@@ -116,57 +116,124 @@ class DetectionController:
 
             plane_distance = round(math.sqrt(plane_distance_sq), 2)
 
+            # Calcolo della distanza tramite le coordinate globali del tag e della camera
+            tag_coords = np.array(
+                [*sim.getObjectPosition(sim.getObject(f"./tag{tag.tag_id}")), 1])
+            cam_coords = np.array(
+                [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
+            
+            plane_distance_manual_sq = np.linalg.norm(
+                tag_coords - cam_coords) ** 2 - self._camera_height ** 2
+            if plane_distance_manual_sq < 0:
+                plane_distance_manual_sq = 0  # Imposta a zero se il valore è negativo
+
+            plane_distance_manual = round(
+                math.sqrt(plane_distance_manual_sq), 2)
+            
             # Calcolo della distanza tramite il modello di ML
             DISTANCE = round(model.predict(pd.DataFrame({"distanza_calcolata": [
-                                       plane_distance], "tag_center_x": [cX], "tag_center_y": [cY]}))[0], 2)
+                plane_distance], "tag_center_x": [cX], "tag_center_y": [cY]}))[0], 2)
+            
+            print(f"Distanza: {plane_distance}, Manual dist: {plane_distance_manual}, Pred. dist: {DISTANCE}, Diff: {round(abs(plane_distance - plane_distance_manual), 2)}, Diff con predetto: {round(abs(plane_distance_manual - DISTANCE), 2)}")
 
 
             ######################## Calcolo dello yaw ####################################
             old_corners = list(tag.corners)
-            
+
             y_min = min(old_corners, key=lambda x: x[1])[1]
             y_max = max(old_corners, key=lambda x: x[1])[1]
             x_min = min(old_corners, key=lambda x: x[0])[0]
             x_max = max(old_corners, key=lambda x: x[0])[0]
-            
+
             box_width = x_max - x_min
             box_height = y_max - y_min
-            
-            # Sottraggo a tutte le coordinate x_min e y_min per avere un box centrato in 0,0
-            new_corners = [(x - x_min, y - y_min) for x, y in old_corners]
-            
+
+            # Sottraggo a tutte le coordinate x_min e y_min per avere un box con origine in 0,0
+            scaled_corners = [(x - x_min, y - y_min) for x, y in old_corners]
+
+
             # Inserisco nella variabile left_side_point l'indice del punto con ascissa zero
-            left_side_point = new_corners.index(
-                min(new_corners, key=lambda x: x[0]))
+            left_side_point = scaled_corners.index(
+                min(scaled_corners, key=lambda x: x[0]))
 
             # Creo anche le variabili per gli altri lati
             bottom_side_point = (left_side_point + 1) % 4
             right_side_point = (left_side_point + 2) % 4
             top_side_point = (left_side_point + 3) % 4
-            
+
             # Eseguo l'interpolazione sui lati
             new_corners = [None] * 4
-            new_corners[top_side_point] = old_corners[top_side_point]
-            new_corners[bottom_side_point] = [old_corners[bottom_side_point][0], box_width]
-            new_corners[right_side_point] = [old_corners[right_side_point][1], box_width * old_corners[right_side_point][1] / box_height]
-            new_corners[left_side_point] = [old_corners[left_side_point][1], box_width * old_corners[left_side_point][1] / box_height]
+            new_corners[top_side_point] = scaled_corners[top_side_point]
+            new_corners[bottom_side_point] = (
+                scaled_corners[bottom_side_point][0], box_width)
+            new_corners[right_side_point] = (
+                scaled_corners[right_side_point][0], box_width * scaled_corners[right_side_point][1] / box_height)
+            new_corners[left_side_point] = (
+                scaled_corners[left_side_point][0], box_width * scaled_corners[left_side_point][1] / box_height)
+
+
+            # # Disegna una freccia da new_corners[1] a new_corners[2] all'interno del plot
+            # plt.arrow(new_corners[1][0], new_corners[1][1], new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1], head_width=0.3, head_length=0.3, fc='black', ec='black')
+            # # Disegna una freccia che parte da new_corners[1] e punta verso il basso
+            # plt.arrow(new_corners[1][0], new_corners[1][1], 0, 10, head_width=0.3, head_length=0.3, fc='black', ec='black')
+
+         
+
+            # # Estrai le coordinate x e y di new_corners
+            # x_coords = [point[0] for point in new_corners]
+            # y_coords = [point[1] for point in new_corners]
+
+            # # Crea uno scatter plot dei punti
+            # plt.scatter(x_coords, y_coords)
+
+            # # Aggiungi etichette ai punti
+            # for i, (x, y) in enumerate(zip(x_coords, y_coords)):
+            #     plt.text(x, y, f"P{i+1}", fontsize=8, ha='center', va='center')
+
+            # # Imposta il titolo del plot e le etichette degli assi
+            # plt.title("AprilTag Corners")
+            # plt.xlabel("X")
+            # plt.ylabel("Y")
+
+            # # Regola i limiti del plot per assicurarti che le frecce siano completamente visibili
+            # plt.xlim(min(x_coords) - 1, max(x_coords) + 1)
+            # plt.ylim(min(y_coords) - 1, max(y_coords) + 11)
+
+            # # Inverti l'asse y
+            # plt.gca().invert_yaxis()
+
+            # # Mostra il plot
+            # plt.show()
             
-            # Calcolo il vettore dal bottom_sx al top_sx
-            vector = np.array(new_corners[2]) - np.array(new_corners[1])
             
+            # Vettore da new_corners[1] a new_corners[2]
+            vector1 = np.array([new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1]])
+
+            # Vettore parallelo all'asse y  (che nelle immagini è rivolta verso il basso)
+            vector2 = np.array([0, 10])
             
-            abs_yaw = np.round(np.arccos(-vector.y / np.sqrt(vector.x ** 2 + vector.y ** 2)) * RADIANS_COEFF * 100) / 100
-            
+            # Calcola il prodotto scalare dei vettori
+            dot_product = np.dot(vector1, vector2)
+
+            # Calcola la lunghezza dei vettori
+            vector1_length = np.linalg.norm(vector1)
+            vector2_length = np.linalg.norm(vector2)
+
+            # Calcola il coseno dell'angolo usando la formula del prodotto scalare
+            cos_theta = dot_product / (vector1_length * vector2_length)
+
+            # Calcola l'angolo in radianti e poi in gradi
+            abs_yaw = np.degrees(np.arccos(cos_theta))
+
             # Determinazione del segno dello yaw
-            yaw_sign = 1 if new_corners[2].x > new_corners[1].x else -1
+            yaw_sign = 1 if new_corners[2][0] > new_corners[1][0] else -1
 
             # Calcolo dello yaw
-            yaw = yaw_sign * abs_yaw
+            YAW = yaw_sign * abs_yaw
 
-            exit()
-            
+            return image, tag.tag_id, DISTANCE, YAW, PHI
 
-        return image
+        return image, -1, -1, -1, -1
 
     @staticmethod
     def bytearray_to_image(bytearr, resolution):
@@ -196,10 +263,13 @@ class DetectionController:
 
 sat = FlowSat()
 timer = sat._timer
-chronoSensePub = ElapsedTime()
+
 
 cameraChanName = "cam"
 cameraChan = None
+
+distYawPhiChanName = "dist_yaw_phi"
+distYawPhiChan = None
 
 
 controller = None
@@ -228,7 +298,7 @@ def setup():
 
     global model
 
-    # Percorso del file ZIP che contiene il modello
+    # Percorso dell'archivio ZIP che contiene il modello
     zip_path = 'modello.zip'
 
     # Estrarre il file modello.pkl dall'archivio ZIP
@@ -239,11 +309,7 @@ def setup():
     with open('modello.pkl', 'rb') as file:
         model = pickle.load(file)
 
-    # Utilizzare il modello
-    # Ad esempio, supponiamo che il modello sia un classificatore e vogliamo fare una previsione
-    # result = model.predict(data)
-
-    # Rimozione del file modello.pkl dopo l'uso (opzionale)
+    # Rimozione del file modello.pkl dopo l'uso
     import os
     os.remove('modello.pkl')
 
@@ -268,6 +334,8 @@ def setup():
         sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
+        sat.addStreamingChannel(
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, distYawPhiChanName)
 
     return ok
 
@@ -284,6 +352,7 @@ def loop():
 def onChannelAdded(ch: FlowChannel):
 
     global cameraChan
+    global distYawPhiChan
     if (ch.name == f"guest.{cameraChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         cameraChan = ch
@@ -303,6 +372,9 @@ def onChannelAdded(ch: FlowChannel):
         controller._intrinsics = [float(x) for x in controller._intrinsics.replace(
             "[", "").replace("]", "").split(",")]
         sync.close()
+    if (ch.name == f"guest.{distYawPhiChanName}"):
+        print("Channel ADDED: {}".format(ch.name))
+        distYawPhiChan = ch
 
 
 def onChannelRemoved(ch: FlowChannel):
@@ -322,7 +394,11 @@ def onDataGrabbed(chanID, data):
         image = DetectionController.bytearray_to_image(
             data, (controller._height, controller._width))
 
-        image = controller.detect(image)
+        image, ID, DISTANCE, YAW, PHI = controller.detect(image)
+
+        
+        data = struct.pack("<bfff", ID, DISTANCE, YAW, PHI)
+        sat.publish(distYawPhiChan.chanID, data)
 
         cv2.imshow('image', image)
         cv2.waitKey(1)

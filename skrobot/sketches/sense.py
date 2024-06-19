@@ -81,18 +81,11 @@ class SenseController:
                 dist = 100
             front_sensor_dists.append(round(dist, 3))
 
-        # new_sensors_values = {Directions(i).name: dist for i, dist in enumerate(front_sensor_dists)}
 
-        # return json.dumps(new_sensors_values)
 
         return front_sensor_dists
 
-    # def publish_sense(self, new_sense):
-    #     if(self._old_sense != new_sense):
-    #         # print("New sense are: " + new_sense.replace("ultrasonicSensor","sens_id"), flush=True)
-    #         self._client.publish("/sensors", new_sense) # publish message
-    #         self._old_sense = new_sense
-
+ 
 
 ###############################################################################
 # SKETCH

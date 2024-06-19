@@ -81,6 +81,11 @@ perceptionChan = None
 actionChanName = "action"
 actionChan = None
 
+# Canale distYawPhi
+
+distYawPhiChanName = "dist_yaw_phi"
+distYawPhiChan = None
+
 
 controller = None
 
@@ -137,7 +142,7 @@ class Controller:
         self._last_command = Command.STOP
         self.exec_command(Command.STOP)
         
-        self._responce_sent = False
+        self._response_sent = False
 
     def connect_to_sim(self):
         print("Connecting to simulator...", flush=True)
@@ -316,11 +321,11 @@ class Controller:
                 self._last_command = Command.STOP
                 self.exec_command(Command.STOP)
 
-                if(not self._responce_sent):
+                if(not self._response_sent):
                     sat.sendServiceResponse(serviceAuto.chanID, last_hash, "reached")
-                    self._responce_sent = True 
+                    self._response_sent = True 
             else:
-                self._responce_sent = False
+                self._response_sent = False
                 # Imposta last command come la direzione migliore per avvicinarsi al target
                 self.get_dir_to_target(
                     pos_to_reach)
@@ -348,6 +353,8 @@ class Controller:
     def change_mode(self, decoded_msg: str):
         self._mode = Mode(decoded_msg)
         # print("Cambio modalità in " + str(self._mode.name), flush=True)
+
+
 
 
 ###############################################################################
@@ -427,6 +434,7 @@ def onChannelAdded(ch: FlowChannel):
     global gesturePositionChan
     global perceptionChan
     global actionChan
+    global distYawPhiChan
 
     if (ch.name == f"guest.{serviceAutoName}"):
         serviceAuto = ch
@@ -464,6 +472,11 @@ def onChannelAdded(ch: FlowChannel):
         print("Channel ADDED: {}".format(ch.name))
         perceptionChan = ch
         sat.subscribeChannel(perceptionChan.chanID)
+        
+    elif (ch.name == f"guest.{distYawPhiChanName}"):
+        print("Channel ADDED: {}".format(ch.name))
+        distYawPhiChan = ch
+        sat.subscribeChannel(distYawPhiChan.chanID)
 
 
 def onChannelRemoved(ch):
@@ -479,7 +492,7 @@ def onStopChanPub(ch):
 
 
 def onDataGrabbed(chanID, data):
-
+    
     if (gestureModeChan and chanID == gestureModeChan.chanID):
         data, = struct.unpack('<b', data)
         controller.change_mode(data)
@@ -500,6 +513,8 @@ def onDataGrabbed(chanID, data):
         new_perceptions = {Command.LEFT: bits[0], Command.FRONTLEFT: bits[1],
                            Command.FRONT: bits[2], Command.FRONTRIGHT: bits[3], Command.RIGHT: bits[4]}
         controller.handle_perceptions(new_perceptions)
+    
+
 
 last_hash = ""
 def onServiceRequest(chanID: FlowChanID, hash: str, cmdName: str, val):
