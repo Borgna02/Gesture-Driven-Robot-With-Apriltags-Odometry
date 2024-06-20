@@ -151,16 +151,14 @@ class TagHandler:
         Cy = Ty - y_delta
         
         # Recupero gli x_delta e y_delta reali
-
         cam_coords = np.array(
                 [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
 
-        
         # Calcola la distanza tra cam_coords e C
         error = np.linalg.norm(cam_coords[:2] - np.array([Cx, Cy]))
         
         # Salva questi dati su due file csv separati, uno per x e uno per y
-        with open('error_senza_phi.csv', mode='a') as file:
+        with open('error_with_dewarping.csv', mode='a') as file:
             writer = csv.writer(file)
             writer.writerow([Cx, Cy, cam_coords[0], cam_coords[1], error])
             

@@ -113,7 +113,9 @@ class CameraController:
         # height, width, channels
         image = np_array.reshape((resolution[1], resolution[0], 3))
         image = cv2.flip(image, 0)
-
+        
+        
+  
         # Converti l'immagine in scala di grigi
         image_bn = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 

@@ -68,6 +68,21 @@ class DetectionController:
     def detect(self, image):
         if (not self._intrinsics):
             return None
+        
+        
+        # Dewarping
+        black = np.zeros((self._height, self._width, 3), np.uint8)
+        # cv2.imshow('black', black)
+        
+        pts_src = np.array([[0, 0], [self._width, 0], [self._width, self._height], [0, self._height]])
+        pts_dst = np.array([[0, 0], [self._width, 0], [500, self._height], [140, self._height]])
+        
+        h, _ = cv2.findHomography(pts_src, pts_dst)
+        
+        dewarped_image = cv2.warpPerspective(image, h, (black.shape[1], black.shape[0]))
+        
+        # cv2.imshow('dewarped', dewarped_image)
+        cv2.imwrite('dewarped.png', dewarped_image)
 
         at_detector = Detector(families='tag36h11',
                                nthreads=1,
@@ -133,79 +148,24 @@ class DetectionController:
 
 
             ######################## Calcolo dello yaw ####################################
-            old_corners = list(tag.corners)
-
-            y_min = min(old_corners, key=lambda x: x[1])[1]
-            y_max = max(old_corners, key=lambda x: x[1])[1]
-            x_min = min(old_corners, key=lambda x: x[0])[0]
-            x_max = max(old_corners, key=lambda x: x[0])[0]
-
-            box_width = x_max - x_min
-            box_height = y_max - y_min
-
-            # Sottraggo a tutte le coordinate x_min e y_min per avere un box con origine in 0,0
-            scaled_corners = [(x - x_min, y - y_min) for x, y in old_corners]
-
-
-            # Inserisco nella variabile left_side_point l'indice del punto con ascissa zero
-            left_side_point = scaled_corners.index(
-                min(scaled_corners, key=lambda x: x[0]))
-
-            # Creo anche le variabili per gli altri lati
-            bottom_side_point = (left_side_point + 1) % 4
-            right_side_point = (left_side_point + 2) % 4
-            top_side_point = (left_side_point + 3) % 4
-
-            # Eseguo l'interpolazione sui lati
-            new_corners = [None] * 4
-            new_corners[top_side_point] = scaled_corners[top_side_point]
-            new_corners[bottom_side_point] = (
-                scaled_corners[bottom_side_point][0], box_width)
-            new_corners[right_side_point] = (
-                scaled_corners[right_side_point][0], box_width * scaled_corners[right_side_point][1] / box_height)
-            new_corners[left_side_point] = (
-                scaled_corners[left_side_point][0], box_width * scaled_corners[left_side_point][1] / box_height)
-
-
-            # # Disegna una freccia da new_corners[1] a new_corners[2] all'interno del plot
-            # plt.arrow(new_corners[1][0], new_corners[1][1], new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1], head_width=0.3, head_length=0.3, fc='black', ec='black')
-            # # Disegna una freccia che parte da new_corners[1] e punta verso il basso
-            # plt.arrow(new_corners[1][0], new_corners[1][1], 0, 10, head_width=0.3, head_length=0.3, fc='black', ec='black')
-
-         
-
-            # # Estrai le coordinate x e y di new_corners
-            # x_coords = [point[0] for point in new_corners]
-            # y_coords = [point[1] for point in new_corners]
-
-            # # Crea uno scatter plot dei punti
-            # plt.scatter(x_coords, y_coords)
-
-            # # Aggiungi etichette ai punti
-            # for i, (x, y) in enumerate(zip(x_coords, y_coords)):
-            #     plt.text(x, y, f"P{i+1}", fontsize=8, ha='center', va='center')
-
-            # # Imposta il titolo del plot e le etichette degli assi
-            # plt.title("AprilTag Corners")
-            # plt.xlabel("X")
-            # plt.ylabel("Y")
-
-            # # Regola i limiti del plot per assicurarti che le frecce siano completamente visibili
-            # plt.xlim(min(x_coords) - 1, max(x_coords) + 1)
-            # plt.ylim(min(y_coords) - 1, max(y_coords) + 11)
-
-            # # Inverti l'asse y
-            # plt.gca().invert_yaxis()
-
-            # # Mostra il plot
-            # plt.show()
             
             
-            # Vettore da new_corners[1] a new_corners[2]
-            vector1 = np.array([new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1]])
+            
+            tags_in_dewarped = at_detector.detect(dewarped_image, False, tag_size=0.06)
+            
+            if not tags_in_dewarped:
+                return image, -1, -1, -1
+            
+            corners = list(tags_in_dewarped[0].corners)
 
-            # Versore parallelo all'asse x
-            vector2 = np.array([-1, 0])
+            
+            
+            
+            # Vettore da corners[0] (bottom_sx) a corners[1] (bottom_dx), ovvero parallelo all'asse x dell'arena
+            vector1 = np.array([corners[0][0] - corners[1][0], corners[0][1] - corners[1][1]])
+
+            # Versore opposto all'asse y dell'immagine, ovvero la visuale del robot
+            vector2 = np.array([0, 10])
             
             # Calcola il prodotto scalare dei vettori
             dot_product = np.dot(vector1, vector2)
@@ -221,7 +181,7 @@ class DetectionController:
             abs_yaw = np.degrees(np.arccos(cos_theta))
 
             # Determinazione del segno dello yaw
-            yaw_sign = 1 if new_corners[2][1] < new_corners[1][1] else -1
+            yaw_sign = 1 if corners[0][0] < corners[1][0] else -1
 
             # Calcolo dello yaw
             YAW = yaw_sign * abs_yaw
@@ -229,7 +189,7 @@ class DetectionController:
             
             real_orientation = math.degrees(sim.getObjectOrientation(sim.getObject("./PioneerP3DX"))[2])
          
-            with open('orientation_error.csv', 'a', newline='') as csvfile:
+            with open('orientation_error_with_dewarping.csv', 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow([YAW, real_orientation])
 
