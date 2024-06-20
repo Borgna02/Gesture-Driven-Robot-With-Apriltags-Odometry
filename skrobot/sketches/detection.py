@@ -46,7 +46,8 @@ from dt_apriltags import Detection, Detector
 import pickle
 import zipfile
 import matplotlib.pyplot as plt
-
+import os
+import csv
 
 
 ###############################################################################
@@ -93,13 +94,7 @@ class DetectionController:
             (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
             cv2.circle(image, (cX, cY), 5, (0, 0, 255), -1)
 
-            ###################### Calcolo dell'angolo phi ##############################
-
-            # Calcolo in percentuale dove si trova il centro del tag rispetto alla larghezza dell'immagine
-            x_center_perc = cX / self._width
-
-            # Calcolo il phi scalando il valore tra -FOV_X/2 e FOV_X/2 gradi
-            PHI = round(self._fov * x_center_perc - self._fov/2, 3)
+          
 
             ###################### Calcolo della distanza ################################
 
@@ -134,7 +129,7 @@ class DetectionController:
             DISTANCE = round(model.predict(pd.DataFrame({"distanza_calcolata": [
                 plane_distance], "tag_center_x": [cX], "tag_center_y": [cY]}))[0], 2)
             
-            print(f"Distanza: {plane_distance}, Manual dist: {plane_distance_manual}, Pred. dist: {DISTANCE}, Diff: {round(abs(plane_distance - plane_distance_manual), 2)}, Diff con predetto: {round(abs(plane_distance_manual - DISTANCE), 2)}")
+            # print(f"Distanza: {plane_distance}, Manual dist: {plane_distance_manual}, Pred. dist: {DISTANCE}, Diff: {round(abs(plane_distance - plane_distance_manual), 2)}, Diff con predetto: {round(abs(plane_distance_manual - DISTANCE), 2)}")
 
 
             ######################## Calcolo dello yaw ####################################
@@ -209,8 +204,8 @@ class DetectionController:
             # Vettore da new_corners[1] a new_corners[2]
             vector1 = np.array([new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1]])
 
-            # Vettore parallelo all'asse y  (che nelle immagini è rivolta verso il basso)
-            vector2 = np.array([0, 10])
+            # Versore parallelo all'asse x
+            vector2 = np.array([-1, 0])
             
             # Calcola il prodotto scalare dei vettori
             dot_product = np.dot(vector1, vector2)
@@ -222,18 +217,26 @@ class DetectionController:
             # Calcola il coseno dell'angolo usando la formula del prodotto scalare
             cos_theta = dot_product / (vector1_length * vector2_length)
 
-            # Calcola l'angolo in radianti e poi in gradi
+            # Calcola l'angolo in radianti
             abs_yaw = np.degrees(np.arccos(cos_theta))
 
             # Determinazione del segno dello yaw
-            yaw_sign = 1 if new_corners[2][0] > new_corners[1][0] else -1
+            yaw_sign = 1 if new_corners[2][1] < new_corners[1][1] else -1
 
             # Calcolo dello yaw
             YAW = yaw_sign * abs_yaw
+            
+            
+            real_orientation = math.degrees(sim.getObjectOrientation(sim.getObject("./PioneerP3DX"))[2])
+         
+            with open('orientation_error.csv', 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([YAW, real_orientation])
 
-            return image, tag.tag_id, DISTANCE, YAW, PHI
+            return image, tag.tag_id, DISTANCE, YAW
 
-        return image, -1, -1, -1, -1
+
+        return image, -1, -1, -1
 
     @staticmethod
     def bytearray_to_image(bytearr, resolution):
@@ -310,7 +313,7 @@ def setup():
         model = pickle.load(file)
 
     # Rimozione del file modello.pkl dopo l'uso
-    import os
+   
     os.remove('modello.pkl')
 
     sat.setLogin(args.user, args.password)
@@ -394,10 +397,10 @@ def onDataGrabbed(chanID, data):
         image = DetectionController.bytearray_to_image(
             data, (controller._height, controller._width))
 
-        image, ID, DISTANCE, YAW, PHI = controller.detect(image)
+        image, ID, DISTANCE, YAW = controller.detect(image)
 
         
-        data = struct.pack("<bfff", ID, DISTANCE, YAW, PHI)
+        data = struct.pack("<bff", ID, DISTANCE, YAW)
         sat.publish(distYawPhiChan.chanID, data)
 
         cv2.imshow('image', image)

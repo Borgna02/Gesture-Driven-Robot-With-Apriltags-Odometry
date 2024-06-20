@@ -78,7 +78,6 @@ class TagHandler:
                     'y': i,
                     'dist': 0,
                     'yaw': 0,
-                    'phi': 0,
                     'is_visible': False
                 })
                 j += self._space_between_tags
@@ -91,17 +90,16 @@ class TagHandler:
 
        
 
-    def update_tags(self, id, dist, yaw, phi):
+    def update_tags(self, id, dist, yaw):
         
         # Se non vedo nessun tag, id è -1 e quindi nessun tag viene posto come visibile
         new_tags_list = []
         for i, tag in enumerate(self._tags):
             new_tag = {'id' : i, 'x': tag['x'], 'y': tag['y'], 'dist': None,
-                       'yaw': None, 'phi': None, 'is_visible': False}
+                       'yaw': None, 'is_visible': False}
             if i == id:
                 new_tag['dist'] = dist
                 new_tag['yaw'] = yaw
-                new_tag['phi'] = phi
                 new_tag['is_visible'] = True
                 
             new_tags_list.append(new_tag)
@@ -119,6 +117,13 @@ class TagHandler:
             return
         
         tag = visible_tags[0]
+        
+        
+        ##
+        # Calcolo orientamento
+        ##
+        
+        self._my_orientation = tag['yaw']
 
         ##
         # Calcolo posizione della camera
@@ -140,10 +145,10 @@ class TagHandler:
         yaw = math.radians(yaw)
         
         # Calcola le coordinate del punto C
-        x_delta = dist * math.sin(yaw)
-        Cx = Tx + x_delta
-        y_delta = dist * math.cos(yaw)
-        Cy = Ty + y_delta
+        x_delta = dist * math.cos(yaw)
+        Cx = Tx - x_delta
+        y_delta = dist * math.sin(yaw)
+        Cy = Ty - y_delta
         
         # Recupero gli x_delta e y_delta reali
 
@@ -155,7 +160,7 @@ class TagHandler:
         error = np.linalg.norm(cam_coords[:2] - np.array([Cx, Cy]))
         
         # Salva questi dati su due file csv separati, uno per x e uno per y
-        with open('error.csv', mode='a') as file:
+        with open('error_senza_phi.csv', mode='a') as file:
             writer = csv.writer(file)
             writer.writerow([Cx, Cy, cam_coords[0], cam_coords[1], error])
             
@@ -164,44 +169,7 @@ class TagHandler:
         camera_x = round(Cx, 3)
         camera_y = round(Cy, 3)
 
-        ##
-        # Calcolo orientamento
-        ##
-        my_or = 0
-        phi = tag['phi']
-        gamma = abs(yaw)
-        if (abs(yaw) % 90 != 0):
-            if (gamma > 90):
-                gamma = 180 - gamma
-            theta = 90 - gamma
-
-            if (yaw > -180 and yaw < -90):
-                my_or = -theta - phi
-            elif (yaw > 90 and yaw < 180):
-                my_or = -180 + theta - phi
-            elif (yaw > -90 and yaw < 0):
-                my_or = theta - phi
-            elif (yaw > 0 and yaw < 90):
-                my_or = 180 - theta - phi
-            else:
-                print("Caso errato, verificare il problema", flush=True)
-        # tratto separatamente i casi limite
-        else:
-            if (yaw == 0):
-                my_or = 90 - phi
-            elif (yaw == 90):
-                # a seconda del segno di phi parto da 180 o -180
-                my_or = phi/abs(phi) * 180 - phi
-            elif (yaw == 180 or yaw == -180):
-                my_or = -90 - phi
-            elif (yaw == -90):
-                my_or = -phi
-            else:
-                print(
-                    "Caso limite errato, verificare il problema", flush=True)
-
-        my_or = round(my_or, 3)
-        self._my_orientation = my_or
+       
         
         self._my_pos = (round(camera_x, 3),
                         round(camera_y, 3))
@@ -321,11 +289,12 @@ def onStopChanPub(ch: FlowChannel):
 def onDataGrabbed(chanID, data):
     if (chanID == distYawPhiChan.chanID ):
         
-        id, dist, yaw, phi = struct.unpack('<Bfff', data)
-        dist, yaw, phi = round(dist, 2), round(yaw, 2), round(phi, 2)
+        id, dist, yaw = struct.unpack('<bff', data)
+        dist, yaw = round(dist, 2), round(yaw, 2)
         
         
-        handler.update_tags(id, dist, yaw, phi)        
+        
+        handler.update_tags(id, dist, yaw)        
 
         # Con i dati aggiornati posso aggiornare posizione ed orientamento
         handler.update_pos_and_orient()
