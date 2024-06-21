@@ -163,6 +163,9 @@ class GestureController:
 
         self._pos = (0, 0)
         self._orient = 0
+        
+        self._real_pos = (0, 0)
+        self._real_orient = 0
 
     def get_index_direction(self):
 
@@ -359,11 +362,11 @@ class GestureController:
 
 class ImageUtils:
     @staticmethod
-    def write_on_image(image, string, pos, orientation, mode: Mode):
+    def write_on_image(image, string, pos, orientation, mode: Mode, real_pos, real_orient):
         if isinstance(string, Command):
             string = string.name.lower()
-        pos_string = f"Position: {round(pos[0],3)}, {round(pos[1],3)}"
-        orient_string = f"Orientation: {round(orientation, 3)} deg"
+        pos_string = f"Position: {round(pos[0],3)}, {round(pos[1],3)} ({round(real_pos[0],3)}, {round(real_pos[1],3)})"
+        orient_string = f"Orientation: {round(orientation, 2)} ({round(real_orient, 2)})"
         # Scrive la stringa sull'immagine
         cv2.putText(image, string, (50, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
@@ -371,7 +374,7 @@ class ImageUtils:
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
 
         cv2.rectangle(
-            image, (48, image.shape[0] - 58), (320, image.shape[0] - 15), (255, 255, 255), -1)
+            image, (48, image.shape[0] - 58), (450, image.shape[0] - 15), (255, 255, 255), -1)
 
         cv2.putText(image, pos_string, (50, image.shape[0] - 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
@@ -512,7 +515,7 @@ def loop():
 
             # Scrivo l'operazione calcolata sull'immagine e la mostro
             ImageUtils.write_on_image(controller._image, current_operation,
-                                      controller._pos, controller._orient, controller._current_mode)
+                                      controller._pos, controller._orient, controller._current_mode, controller._real_pos, controller._real_orient)
             ImageUtils.show_image(controller._image)
 
             if (current_operation == "Calcolando" or current_operation == "Arrivato"):
@@ -582,8 +585,10 @@ def onDataGrabbed(chanID, data):
 
     if (chanID == gesturePositionChan.chanID):
 
-        x, y, controller._orient = DataBuffer(data).toFloat(3)
+        x, y, controller._orient, real_x, real_y, controller._real_orient = DataBuffer(data).toFloat(6)
         controller._pos = (x, y)
+        controller._real_pos = (real_x, real_y)
+        print(f"Real Pos: {controller._real_pos}")
 
 
 def onServiceResponse(chanID, val):

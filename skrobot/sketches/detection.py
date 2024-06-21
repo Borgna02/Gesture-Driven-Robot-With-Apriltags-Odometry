@@ -80,9 +80,9 @@ class DetectionController:
         
         dewarped_image = cv2.warpPerspective(image, h, (black.shape[1], black.shape[0]))
         
-        # cv2.imshow('dewarped', dewarped_image)
-        cv2.imwrite('dewarped.png', dewarped_image)
-
+        # cv2.imwrite("dewarped.jpg", dewarped_image)
+        
+        # Inizializzo il detector
         at_detector = Detector(families='tag36h11',
                                nthreads=1,
                                quad_decimate=1.0,
@@ -91,9 +91,11 @@ class DetectionController:
                                decode_sharpening=0.25,
                                debug=0)
 
+        # Eseguo la detection sull'immagine originale
         results: list[Detection] = at_detector.detect(
             image, True, self._intrinsics, 0.06)
 
+        # Rendo l'immagine a colori per disegnare il contorno del tag
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
         # loop over the AprilTag detection results
@@ -108,7 +110,8 @@ class DetectionController:
             (cX, cY) = (int(tag.center[0]), int(tag.center[1]))
             cv2.circle(image, (cX, cY), 5, (0, 0, 255), -1)
 
-          
+            
+
 
             ###################### Calcolo della distanza ################################
 
@@ -149,13 +152,15 @@ class DetectionController:
             ######################## Calcolo dello yaw ####################################
             
             
-            
+            # Detection sull'immagine dewarpata senza stima della posizione
             tags_in_dewarped = at_detector.detect(dewarped_image, False, tag_size=0.06)
             
             if not tags_in_dewarped:
-                return image, -1, -1, -1
+                break
             
-            old_corners = list(tags_in_dewarped[0].corners)
+            
+            tag_in_dewarped = tags_in_dewarped[0]
+            old_corners = list(tag_in_dewarped.corners)
 
             y_min = min(old_corners, key=lambda x: x[1])[1]
             y_max = max(old_corners, key=lambda x: x[1])[1]
@@ -187,41 +192,7 @@ class DetectionController:
                 scaled_corners[right_side_point][0], box_width * scaled_corners[right_side_point][1] / box_height)
             new_corners[left_side_point] = (
                 scaled_corners[left_side_point][0], box_width * scaled_corners[left_side_point][1] / box_height)
-
-
-            # # Disegna una freccia da new_corners[1] a new_corners[2] all'interno del plot
-            # plt.arrow(new_corners[1][0], new_corners[1][1], new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1], head_width=0.3, head_length=0.3, fc='black', ec='black')
-            # # Disegna una freccia che parte da new_corners[1] e punta verso il basso
-            # plt.arrow(new_corners[1][0], new_corners[1][1], 0, 10, head_width=0.3, head_length=0.3, fc='black', ec='black')
-
-         
-
-            # # Estrai le coordinate x e y di new_corners
-            # x_coords = [point[0] for point in new_corners]
-            # y_coords = [point[1] for point in new_corners]
-
-            # # Crea uno scatter plot dei punti
-            # plt.scatter(x_coords, y_coords)
-
-            # # Aggiungi etichette ai punti
-            # for i, (x, y) in enumerate(zip(x_coords, y_coords)):
-            #     plt.text(x, y, f"P{i+1}", fontsize=8, ha='center', va='center')
-
-            # # Imposta il titolo del plot e le etichette degli assi
-            # plt.title("AprilTag Corners")
-            # plt.xlabel("X")
-            # plt.ylabel("Y")
-
-            # # Regola i limiti del plot per assicurarti che le frecce siano completamente visibili
-            # plt.xlim(min(x_coords) - 1, max(x_coords) + 1)
-            # plt.ylim(min(y_coords) - 1, max(y_coords) + 11)
-
-            # # Inverti l'asse y
-            # plt.gca().invert_yaxis()
-
-            # # Mostra il plot
-            # plt.show()
-            
+          
             
             # Vettore da new_corners[1] a new_corners[2]
             vector1 = np.array([new_corners[2][0] - new_corners[1][0], new_corners[2][1] - new_corners[1][1]])
@@ -249,16 +220,21 @@ class DetectionController:
             YAW = yaw_sign * abs_yaw
             
             
-            real_orientation = math.degrees(sim.getObjectOrientation(sim.getObject("./PioneerP3DX"))[2])
+            ###################### Calcolo dell'angolo phi ##############################
+            
+            # Calcolo in percentuale dove si trova il centro del tag rispetto alla larghezza dell'immagine
+            x_center_perc = tag_in_dewarped.center[0] / self._width
+
+            # Calcolo il phi scalando il valore tra -FOV_X/2 e FOV_X/2 gradi
+            
+            deg_fov = math.degrees(self._fov)
+            PHI = (deg_fov * x_center_perc - deg_fov/2)
          
-            with open('orientation_error_final.csv', 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([YAW, real_orientation])
 
-            return image, tag.tag_id, DISTANCE, YAW
+            return image, tag.tag_id, DISTANCE, YAW, PHI
 
 
-        return image, -1, -1, -1
+        return image, -1, -1, -1, -1
 
     @staticmethod
     def bytearray_to_image(bytearr, resolution):
@@ -419,10 +395,10 @@ def onDataGrabbed(chanID, data):
         image = DetectionController.bytearray_to_image(
             data, (controller._height, controller._width))
 
-        image, ID, DISTANCE, YAW = controller.detect(image)
+        image, ID, DISTANCE, YAW, PHI = controller.detect(image)
 
         
-        data = struct.pack("<bff", ID, DISTANCE, YAW)
+        data = struct.pack("<bfff", ID, DISTANCE, YAW, PHI)
         sat.publish(distYawPhiChan.chanID, data)
 
         cv2.imshow('image', image)

@@ -138,7 +138,7 @@ class CameraController:
         bytearr = bytearray(bytes_output)
 
         # Mostra l'immagine
-        cv2.imshow("Camera", image_thresh)
+        # cv2.imshow("Camera", image_thresh)
         cv2.waitKey(1)
 
         return bytearr

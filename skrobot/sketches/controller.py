@@ -131,9 +131,6 @@ class Controller:
         # Recupero degli handler dal simulatore
         self.connect_to_sim()
 
-        # Recupero la posizione del robot dal simulatore
-        self.update_pos_and_orient()
-
         # Recupero le posizioni dei targets dal simulatore
         self._targets = dict()
         self.get_targets()
@@ -151,22 +148,18 @@ class Controller:
         print('Connected', flush=True)
         self._robot_handler = self._sim.getObject("./PioneerP3DX")
 
-    def update_pos_and_orient(self, pos=None, orient=None):
-        # robot_x, robot_y, _ = self._sim.getObjectPosition(self._robot_handler)
-        # # Aggiorno la posizione attuale del robot
-        # self._my_pos = (robot_x, robot_y)
-
-        # # Convertire gli angoli da radianti a gradi
-        # _, _, self._my_orientation = tuple(
-        #     map(math.degrees, self._sim.getObjectOrientation(self._robot_handler, -1)))
+    def update_pos_and_orient(self, pos=None, orient=None, pos_real=None, orient_real=None):
+        # Imposto i valori calcolati come posizione e orientamento
         self._my_pos = pos
         self._my_orientation = orient
 
+        # I valori reali (recuperati dal simulatore) li invio al modulo gesture solo per stamparli sull'interfaccia
         if (gesturePositionChan):
             data = DataBuffer()
             data.setFloat(
-                [*self._my_pos, self._my_orientation])
+                [*self._my_pos, self._my_orientation, *pos_real, orient_real])
             sat.publish(gesturePositionChan.chanID, data)
+            
 # TODO capire perché non va la guida automatica
     def get_targets(self):
         for i in range(1, 6):
@@ -516,8 +509,8 @@ def onDataGrabbed(chanID, data):
                            Command.FRONT: bits[2], Command.FRONTRIGHT: bits[3], Command.RIGHT: bits[4]}
         controller.handle_perceptions(new_perceptions)
     elif (posOrientChan and chanID == posOrientChan.chanID):
-        x, y, orientation = struct.unpack('<fff', data)
-        controller.update_pos_and_orient((x, y), orientation)
+        x, y, orientation, real_x, real_y, real_orientation = struct.unpack('<ffffff', data)
+        controller.update_pos_and_orient((x, y), orientation, (real_x, real_y), real_orientation)
     
 
 

@@ -48,27 +48,26 @@ import zipfile
 import matplotlib.pyplot as plt
 
 
-
 ###############################################################################
 # CLASSES
 
 
+ROBOT_RADIUS = 0.222796 # distanza tra la camera e il centro del robot
 
-ROBOT_RADIUS = 0.2
 
 class TagHandler:
 
     def __init__(self):
-        self._arena_size = (4,4) # width, height (meters)
-        self._space_between_tags = 0.8 
-        
+        self._arena_size = (4, 4)  # width, height (meters)
+        self._space_between_tags = 0.8
+
         # Inizializzo il dizionario dei tag
         self._tags = []
         # Itero sulle righe
         i = -self._arena_size[0]/2
-        k = 0 # variabile per l'id
+        k = 0  # variabile per l'id
         while i <= self._arena_size[0]/2:
-            
+
             # Itero sulle colonne
             j = -self._arena_size[1]/2
             while j <= self._arena_size[1]/2:
@@ -78,51 +77,51 @@ class TagHandler:
                     'y': i,
                     'dist': 0,
                     'yaw': 0,
+                    'phi': 0,
                     'is_visible': False
                 })
                 j += self._space_between_tags
                 k += 1
             i += self._space_between_tags
-            
+
         # print(self._tags)
 
-    
+    def update_tags(self, id, dist, yaw, phi):
 
-       
-
-    def update_tags(self, id, dist, yaw):
-        
         # Se non vedo nessun tag, id è -1 e quindi nessun tag viene posto come visibile
         new_tags_list = []
         for i, tag in enumerate(self._tags):
-            new_tag = {'id' : i, 'x': tag['x'], 'y': tag['y'], 'dist': None,
-                       'yaw': None, 'is_visible': False}
+            new_tag = {'id': i, 'x': tag['x'], 'y': tag['y'], 'dist': None,
+                       'yaw': None, 'phi': None, 'is_visible': False}
             if i == id:
                 new_tag['dist'] = dist
                 new_tag['yaw'] = yaw
+                new_tag['phi'] = phi
                 new_tag['is_visible'] = True
-                
+
             new_tags_list.append(new_tag)
 
         self._tags = new_tags_list
 
     def update_pos_and_orient(self):
+        self._real_pos = sim.getObjectPosition(sim.getObject("./PioneerP3DX"))[:2]
+        self._real_orientation = math.degrees(
+            sim.getObjectOrientation(sim.getObject("./PioneerP3DX"))[2])
 
         # Restituisce il tag visibile
-        visible_tags= [tag for tag in self._tags if tag['is_visible'] == True]
-        
+        visible_tags = [tag for tag in self._tags if tag['is_visible'] == True]
+
         if not visible_tags:
             self._my_pos = None
             self._my_orientation = None
             return
-        
+
         tag = visible_tags[0]
-        
-        
+
         ##
         # Calcolo orientamento
         ##
-        
+
         self._my_orientation = tag['yaw']
 
         ##
@@ -133,55 +132,70 @@ class TagHandler:
         if (tag['dist'] == None):
             return
 
-        dist = round(tag['dist'], 3)
-        yaw = round(tag['yaw'], 3)
-     
+        dist = tag['dist']
+        yaw = tag['yaw']
+        phi = tag['phi']
         
+        print(f"dist: {dist}, yaw: {yaw}, phi: {phi}")
+
         # Estrai le coordinate del punto T
         Tx = tag['x']
         Ty = tag['y']
-        
-        # Converti l'angolo yaw da gradi a radianti
-        yaw = math.radians(yaw)
-        
-        # Calcola le coordinate del punto C
-        x_delta = dist * math.cos(yaw)
-        Cx = Tx - x_delta
-        y_delta = dist * math.sin(yaw)
-        Cy = Ty - y_delta
-        
-        # Recupero gli x_delta e y_delta reali
-        cam_coords = np.array(
-                [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
 
-        # Calcola la distanza tra cam_coords e C
-        error = np.linalg.norm(cam_coords[:2] - np.array([Cx, Cy]))
+        # Converti gli angoli in radianti
+        yaw_rad = math.radians(yaw)
+        phi_rad = math.radians(phi)
+
+        # Calcola l'angolo assoluto del tag rispetto all'asse X dell'arena
+        beta = yaw_rad - phi_rad
+
+        # Assicurati che beta rimanga nell'intervallo [-π, π]
+        beta = (beta + math.pi) % (2 * math.pi) - math.pi
+
+        # Calcola la posizione della camera
+        Cx = Tx - dist * math.cos(beta)
+        Cy = Ty - dist * math.sin(beta)
+                
+        # Calcola la posizione del robot
+        Rx, Ry = self.calculate_point_behind(Cx, Cy, yaw, ROBOT_RADIUS)
+      
+        self._my_pos = (Rx, Ry)
+
+        data = struct.pack("<ffffff", *self._my_pos, self._my_orientation,
+                           *self._real_pos, self._real_orientation)
         
-        # Salva questi dati su due file csv separati, uno per x e uno per y
-        with open('error_final.csv', mode='a') as file:
-            writer = csv.writer(file)
-            writer.writerow([Cx, Cy, cam_coords[0], cam_coords[1], error])
-            
-       
         
-        camera_x = round(Cx, 3)
-        camera_y = round(Cy, 3)
-
-       
-        
-        self._my_pos = (round(camera_x, 3),
-                        round(camera_y, 3))
-
-
-
-        data = struct.pack("<fff", *self._my_pos, self._my_orientation)
         sat.publish(posOrientChan.chanID, data)
+        
+        
+        
+        # Salvo i dati sulla posizione all'interno di un csv
+        with open('position_data_2.csv', mode='a') as file:
+            writer = csv.writer(file)
+            writer.writerow([*self._my_pos, self._my_orientation, *self._real_pos, self._real_orientation, phi, math.dist(self._my_pos, self._real_pos)])
 
+
+    def calculate_point_behind(self, Cx, Cy, theta, ROBOT_RADIUS):
+        # Converti l'angolo in radianti se non lo è già
+        theta_rad = math.radians(theta)
+        
+        # Calcola l'angolo nella direzione opposta
+        opposite_angle = theta_rad + math.pi
+        # opposite_angle = theta_rad
+        
+        # Calcola le differenze in x e y
+        dx = ROBOT_RADIUS * math.cos(opposite_angle)
+        dy = ROBOT_RADIUS * math.sin(opposite_angle)
+        
+        # Calcola il nuovo punto
+        Nx = Cx + dx
+        Ny = Cy + dy
+        
+        return Nx, Ny
 
 
 ###############################################################################
 # SKETCH
-
 sat = FlowSat()
 timer = sat._timer
 
@@ -216,10 +230,6 @@ def setup():
     print("Connecting to simulator...")
     sim = RemoteAPIClient(host="localhost").getObject('sim')
     print("Connected to SIM")
-
-    
-
-
 
     sat.setLogin(args.user, args.password)
     sat.setAppName("Position Updater")
@@ -265,7 +275,6 @@ def onChannelAdded(ch: FlowChannel):
         print("Channel ADDED: {}".format(ch.name))
         posOrientChan = ch
 
-        
     if (ch.name == f"guest.{distYawPhiChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         distYawPhiChan = ch
@@ -285,21 +294,14 @@ def onStopChanPub(ch: FlowChannel):
 
 
 def onDataGrabbed(chanID, data):
-    if (chanID == distYawPhiChan.chanID ):
-        
-        id, dist, yaw = struct.unpack('<bff', data)
-        dist, yaw = round(dist, 2), round(yaw, 2)
-        
-        
-        
-        handler.update_tags(id, dist, yaw)        
+    if (chanID == distYawPhiChan.chanID):
+
+        id, dist, yaw, phi = struct.unpack('<bfff', data)
+
+        handler.update_tags(id, dist, yaw, phi)
 
         # Con i dati aggiornati posso aggiornare posizione ed orientamento
         handler.update_pos_and_orient()
-        
-        # Calciolo la distanza tra la posizione calcolata tramite apriltag e la posizione reale nel simulatore
-        cam_coords = np.array(
-                [*sim.getObjectPosition(sim.getObject("./rgb")), 1])
-        
-        print(f"Position: {handler._my_pos}, Orientation: {handler._my_orientation}, Error: {round(np.linalg.norm(cam_coords[:2] - handler._my_pos), 2) if handler._my_pos else None}")
+
+
 ###############################################################################
