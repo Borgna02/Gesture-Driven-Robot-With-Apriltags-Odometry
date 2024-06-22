@@ -155,9 +155,12 @@ class Controller:
 
         # I valori reali (recuperati dal simulatore) li invio al modulo gesture solo per stamparli sull'interfaccia
         if (gesturePositionChan):
-            data = DataBuffer()
-            data.setFloat(
-                [*self._my_pos, self._my_orientation, *pos_real, orient_real])
+    
+            if(self._my_pos != (None, None) and self._my_orientation != None):
+                data = struct.pack("<ffffff", *self._my_pos, self._my_orientation,
+                           *pos_real, orient_real)
+            else:
+                data = struct.pack("<fff", *pos_real, orient_real)
             sat.publish(gesturePositionChan.chanID, data)
             
 # TODO capire perché non va la guida automatica
@@ -509,7 +512,13 @@ def onDataGrabbed(chanID, data):
                            Command.FRONT: bits[2], Command.FRONTRIGHT: bits[3], Command.RIGHT: bits[4]}
         controller.handle_perceptions(new_perceptions)
     elif (posOrientChan and chanID == posOrientChan.chanID):
-        x, y, orientation, real_x, real_y, real_orientation = struct.unpack('<ffffff', data)
+        try:
+            x, y, orientation, real_x, real_y, real_orientation = struct.unpack('<ffffff', data)
+        except struct.error:
+            x, y, orientation = None, None, None
+            real_x, real_y, real_orientation = struct.unpack('<fff', data)
+             
+        print("Received position and orientation: ", x, y, orientation)
         controller.update_pos_and_orient((x, y), orientation, (real_x, real_y), real_orientation)
     
 

@@ -52,7 +52,7 @@ import matplotlib.pyplot as plt
 # CLASSES
 
 
-ROBOT_RADIUS = 0.222796 # distanza tra la camera e il centro del robot
+ROBOT_RADIUS = 0.222796  # distanza tra la camera e il centro del robot
 
 
 class TagHandler:
@@ -104,17 +104,18 @@ class TagHandler:
         self._tags = new_tags_list
 
     def update_pos_and_orient(self):
-        self._real_pos = sim.getObjectPosition(sim.getObject("./PioneerP3DX"))[:2]
+        self._real_pos = sim.getObjectPosition(
+            sim.getObject("./PioneerP3DX"))[:2]
         self._real_orientation = math.degrees(
             sim.getObjectOrientation(sim.getObject("./PioneerP3DX"))[2])
 
         # Restituisce il tag visibile
         visible_tags = [tag for tag in self._tags if tag['is_visible'] == True]
 
-        if not visible_tags:
-            self._my_pos = None
+        if not visible_tags or visible_tags[0]['dist'] == None:
+            self._my_pos = (None, None)
             self._my_orientation = None
-            return
+            return *self._my_pos, self._my_orientation, *self._real_pos, self._real_orientation
 
         tag = visible_tags[0]
 
@@ -128,14 +129,10 @@ class TagHandler:
         # Calcolo posizione della camera
         ##
 
-        # Aggiungo la distanza tra la fotocamera e il centro del robot
-        if (tag['dist'] == None):
-            return
-
         dist = tag['dist']
         yaw = tag['yaw']
         phi = tag['phi']
-        
+
         print(f"dist: {dist}, yaw: {yaw}, phi: {phi}")
 
         # Estrai le coordinate del punto T
@@ -155,42 +152,37 @@ class TagHandler:
         # Calcola la posizione della camera
         Cx = Tx - dist * math.cos(beta)
         Cy = Ty - dist * math.sin(beta)
-                
+
         # Calcola la posizione del robot
         Rx, Ry = self.calculate_point_behind(Cx, Cy, yaw, ROBOT_RADIUS)
-      
+
         self._my_pos = (Rx, Ry)
 
-        data = struct.pack("<ffffff", *self._my_pos, self._my_orientation,
-                           *self._real_pos, self._real_orientation)
-        
-        
-        sat.publish(posOrientChan.chanID, data)
-        
-        
-        
         # Salvo i dati sulla posizione all'interno di un csv
         with open('position_data_2.csv', mode='a') as file:
             writer = csv.writer(file)
-            writer.writerow([*self._my_pos, self._my_orientation, *self._real_pos, self._real_orientation, phi, math.dist(self._my_pos, self._real_pos)])
-
+            writer.writerow([*self._my_pos, self._my_orientation, *self._real_pos,
+                            self._real_orientation, phi, math.dist(self._my_pos, self._real_pos)])
+            
+            
+        return *self._my_pos, self._my_orientation, *self._real_pos, self._real_orientation
 
     def calculate_point_behind(self, Cx, Cy, theta, ROBOT_RADIUS):
         # Converti l'angolo in radianti se non lo è già
         theta_rad = math.radians(theta)
-        
+
         # Calcola l'angolo nella direzione opposta
         opposite_angle = theta_rad + math.pi
         # opposite_angle = theta_rad
-        
+
         # Calcola le differenze in x e y
         dx = ROBOT_RADIUS * math.cos(opposite_angle)
         dy = ROBOT_RADIUS * math.sin(opposite_angle)
-        
+
         # Calcola il nuovo punto
         Nx = Cx + dx
         Ny = Cy + dy
-        
+
         return Nx, Ny
 
 
@@ -301,7 +293,15 @@ def onDataGrabbed(chanID, data):
         handler.update_tags(id, dist, yaw, phi)
 
         # Con i dati aggiornati posso aggiornare posizione ed orientamento
-        handler.update_pos_and_orient()
+        x, y, orientation, real_x, real_y, real_orientation = handler.update_pos_and_orient()
+
+        if(x != None and y != None and orientation != None):
+            data = struct.pack("<ffffff", x, y, orientation,
+                           real_x, real_y, real_orientation)
+        else:
+            data = struct.pack("<fff", real_x, real_y, real_orientation)
+
+        sat.publish(posOrientChan.chanID, data)
 
 
 ###############################################################################

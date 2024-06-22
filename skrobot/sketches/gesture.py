@@ -365,8 +365,20 @@ class ImageUtils:
     def write_on_image(image, string, pos, orientation, mode: Mode, real_pos, real_orient):
         if isinstance(string, Command):
             string = string.name.lower()
-        pos_string = f"Position: {round(pos[0],3)}, {round(pos[1],3)} ({round(real_pos[0],3)}, {round(real_pos[1],3)})"
-        orient_string = f"Orientation: {round(orientation, 2)} ({round(real_orient, 2)})"
+            
+        if pos != (None,None):
+            pos_string = f"Position: {round(pos[0],3)}, {round(pos[1],3)}"
+        else: 
+            pos_string = f"Position: Nessun tag"
+            
+        pos_string += f" ({round(real_pos[0], 3)}, {round(real_pos[1], 3)})"
+        
+        if orientation != None:
+            orient_string = f"Orientation: {round(orientation, 2)}"
+        else:
+            orient_string = f"Orientation: Nessun tag"
+        
+        orient_string += f" ({round(real_orient, 2)})"
         # Scrive la stringa sull'immagine
         cv2.putText(image, string, (50, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
@@ -585,7 +597,15 @@ def onDataGrabbed(chanID, data):
 
     if (chanID == gesturePositionChan.chanID):
 
-        x, y, controller._orient, real_x, real_y, controller._real_orient = DataBuffer(data).toFloat(6)
+        # x, y, controller._orient, real_x, real_y, controller._real_orient = DataBuffer(data).toFloat(6)
+        
+        try:
+            x, y, controller._orient, real_x, real_y, controller._real_orient = struct.unpack('<ffffff', data)
+        except struct.error:
+            x, y, controller._orient = None, None, None
+            real_x, real_y, controller._real_orient = struct.unpack('<fff', data)
+        
+        
         controller._pos = (x, y)
         controller._real_pos = (real_x, real_y)
         print(f"Real Pos: {controller._real_pos}")
