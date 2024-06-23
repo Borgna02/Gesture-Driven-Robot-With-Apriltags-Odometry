@@ -59,7 +59,7 @@ class TagHandler:
 
     def __init__(self):
         self._arena_size = (4, 4)  # width, height (meters)
-        self._space_between_tags = 0.8
+        self._space_between_tags = 0.5
 
         # Inizializzo il dizionario dei tag
         self._tags = []
@@ -133,7 +133,6 @@ class TagHandler:
         yaw = tag['yaw']
         phi = tag['phi']
 
-        print(f"dist: {dist}, yaw: {yaw}, phi: {phi}")
 
         # Estrai le coordinate del punto T
         Tx = tag['x']

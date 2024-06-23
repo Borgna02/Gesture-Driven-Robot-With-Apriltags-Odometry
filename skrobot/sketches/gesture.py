@@ -237,9 +237,10 @@ class GestureController:
         print("Changing Mode in " + self._current_mode.name)
         
         
-        sat.setCurrentDbName(gestureModeChan.name)
-        sat.setVariable("mode", self._current_mode.value)
-        sat.setCurrentDbName(sat._userName)
+        data = struct.pack("<b", controller._current_mode.value)
+        sat.publish(gestureModeChan.chanID, data)
+        
+        
 
     def compute_operation(self):
 
@@ -350,6 +351,7 @@ class GestureController:
         
         # Se l'operazione è STOP invio il suo valore numerico, altrimenti inv
         if (current_operation != self._last_operation):
+            print("QUa")
             operation_code = current_operation.value if current_operation == Command.STOP else current_operation
             sat.sendServiceRequest(
                 serviceAuto.chanID, "cmndAuto", operation_code)
@@ -569,8 +571,9 @@ def onChannelAdded(ch: FlowChannel):
         gestureManualChan = ch
     elif (ch.name == f"guest.{gestureModeChanName}"):
         print("Channel ADDED: {}".format(ch.name))
-        gestureModeChan = ch
+        gestureModeChan = ch       
         controller.change_mode()
+        
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureConfirmChan = ch
@@ -608,7 +611,6 @@ def onDataGrabbed(chanID, data):
         
         controller._pos = (x, y)
         controller._real_pos = (real_x, real_y)
-        print(f"Real Pos: {controller._real_pos}")
 
 
 def onServiceResponse(chanID, val):

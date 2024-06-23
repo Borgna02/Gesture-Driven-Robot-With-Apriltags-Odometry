@@ -140,6 +140,8 @@ class Controller:
         self.exec_command(Command.STOP)
         
         self._response_sent = False
+        
+        self._reached = False
 
     def connect_to_sim(self):
         print("Connecting to simulator...", flush=True)
@@ -163,7 +165,6 @@ class Controller:
                 data = struct.pack("<fff", *pos_real, orient_real)
             sat.publish(gesturePositionChan.chanID, data)
             
-# TODO capire perché non va la guida automatica
     def get_targets(self):
         for i in range(1, 6):
             # Ottengo la posizione (in metri) degli obiettivi relativa all'origine della scena
@@ -310,6 +311,25 @@ class Controller:
             self.exec_command(Command.STOP)
 
         else:
+            print(self._my_pos)
+            if(self._my_pos == (None, None)):
+                # Controllo qual è l'ultimo comando che stavo eseguendo
+                command = self._last_command
+                if (self._last_avoiding_command != ""):
+                    command = self._last_avoiding_command
+
+                print("QUa")
+                if (self._reached):
+                    self.exec_command(Command.STOP)
+                # Se l'ultimo comando è verso destra, ruoto lentamente verso destra
+                elif (command == Command.RIGHT or command == Command.FRONTRIGHT):
+                    self.exec_command(Command.RIGHT)
+                # Altrimenti ruoto lentamente verso sinistra
+                else:
+                    self.exec_command(Command.LEFT)
+                return
+            
+            
             # Recupero dal dizionario la posizione da raggiungere
             pos_to_reach = self._targets[str(decoded_msg)]
 
@@ -321,8 +341,10 @@ class Controller:
 
                 if(not self._response_sent):
                     sat.sendServiceResponse(serviceAuto.chanID, last_hash, "reached")
+                    self._reached = True
                     self._response_sent = True 
             else:
+                self._reached = False
                 self._response_sent = False
                 # Imposta last command come la direzione migliore per avvicinarsi al target
                 self.get_dir_to_target(
@@ -415,6 +437,7 @@ def loop():
     #     chronoPositionUpdate.start()
 
     if (controller._mode == Mode.AUTO and controller._last_received_auto_cmnd):
+        print("Auto command received: ", controller._last_received_auto_cmnd)
         controller.handle_auto_cmnd(controller._last_received_auto_cmnd)
 
     sat.tick()
@@ -448,12 +471,6 @@ def onChannelAdded(ch: FlowChannel):
         gestureModeChan = ch
         sat.subscribeChannel(gestureModeChan.chanID)
         
-        sync = sat.newSyncClient()
-        sync.setCurrentDbName(gestureModeChan.name)
-        print("Var", sync.getVariable("mode"))
-        controller._mode = Mode(int(sync.getVariable("mode")))
-        sync.close()
-
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureConfirmChan = ch
@@ -518,7 +535,6 @@ def onDataGrabbed(chanID, data):
             x, y, orientation = None, None, None
             real_x, real_y, real_orientation = struct.unpack('<fff', data)
              
-        print("Received position and orientation: ", x, y, orientation)
         controller.update_pos_and_orient((x, y), orientation, (real_x, real_y), real_orientation)
     
 
