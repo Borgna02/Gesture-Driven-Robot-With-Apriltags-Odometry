@@ -169,13 +169,13 @@ class Controller:
         for i in range(1, 6):
             # Ottengo la posizione (in metri) degli obiettivi relativa all'origine della scena
             x, y, _ = self._sim.getObjectPosition(
-                self._sim.getObject("./Disc"+str(i)), -1)
+                self._sim.getObject("./Target"+str(i)), -1)
+            
             # in alcuni casi la coordinata 0 non viene restituita come 0 ma come un numero infinitamente piccolo
             x = 0 if x < 0.00001 and x > -0.0001 else x
             y = 0 if y < 0.00001 and y > -0.0001 else y
-            self._targets[str(i)] = x, y
 
-    # ricava l'azione dall'ultimo comando dato e la pubblica se è diversa da quella attuale
+            self._targets[str(i)] = x, y
 
     def exec_command(self, command):
 
@@ -435,6 +435,7 @@ def loop():
     # if (chronoPositionUpdate.stop() > 1):
     #     controller.update_pos_and_orient()
     #     chronoPositionUpdate.start()
+    
 
     if (controller._mode == Mode.AUTO and controller._last_received_auto_cmnd):
         print("Auto command received: ", controller._last_received_auto_cmnd)
@@ -470,6 +471,9 @@ def onChannelAdded(ch: FlowChannel):
         print("Channel ADDED: {}".format(ch.name))
         gestureModeChan = ch
         sat.subscribeChannel(gestureModeChan.chanID)
+        
+        
+        
         
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
@@ -511,10 +515,10 @@ def onDataGrabbed(chanID, data):
     if (gestureModeChan and chanID == gestureModeChan.chanID):
         data, = struct.unpack('<b', data)
         controller.change_mode(data)
+        print("Modalità cambiata in " + str(controller._mode.name))
 
     elif (gestureManualChan and chanID == gestureManualChan.chanID):
         data, = struct.unpack('<b', data)
-        print("Command: ", Command(data).name)
         controller.handle_manual_cmnd(data)
 
     elif (perceptionChan and chanID == perceptionChan.chanID):

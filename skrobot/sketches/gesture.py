@@ -148,7 +148,7 @@ class handTracker():
 class GestureController:
 
     def __init__(self):
-        self._current_mode = Mode.AUTO 
+        self._current_mode = Mode.MANUAL 
 
         self._tracker = handTracker()
 
@@ -235,9 +235,9 @@ class GestureController:
             self._mean_pos = Command.STOP
 
         print("Changing Mode in " + self._current_mode.name)
+       
         
-        
-        data = struct.pack("<b", controller._current_mode.value)
+        data = struct.pack("<b", self._current_mode.value)
         sat.publish(gestureModeChan.chanID, data)
         
         
@@ -388,7 +388,7 @@ class ImageUtils:
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
 
         cv2.rectangle(
-            image, (48, image.shape[0] - 58), (450, image.shape[0] - 15), (255, 255, 255), -1)
+            image, (48, image.shape[0] - 58), (470, image.shape[0] - 15), (255, 255, 255), -1)
 
         cv2.putText(image, pos_string, (50, image.shape[0] - 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
@@ -569,15 +569,19 @@ def onChannelAdded(ch: FlowChannel):
     elif (ch.name == f"guest.{gestureManualChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureManualChan = ch
+        
     elif (ch.name == f"guest.{gestureModeChanName}"):
         print("Channel ADDED: {}".format(ch.name))
-        gestureModeChan = ch       
-        controller.change_mode()
+        gestureModeChan = ch               
+        print("Current mode: ", controller._current_mode.value)
+        data = struct.pack("<b", controller._current_mode.value)
+        sat.publish(gestureModeChan.chanID, data)        
         
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gestureConfirmChan = ch
         sat.subscribeChannel(gestureConfirmChan.chanID)
+        
     elif (ch.name == f"guest.{gesturePositionChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         gesturePositionChan = ch
