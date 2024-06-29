@@ -472,8 +472,12 @@ def onChannelAdded(ch: FlowChannel):
         gestureModeChan = ch
         sat.subscribeChannel(gestureModeChan.chanID)
         
-        
-        
+        sync = sat.newSyncClient()
+        sync.setCurrentDbName(gestureModeChan.name)
+        print("Var", sync.getVariable("mode"))
+        controller._mode = Mode(int(sync.getVariable("mode")))
+        sync.close()
+
         
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))

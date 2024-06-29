@@ -242,6 +242,8 @@ class GestureController:
         
         
 
+        
+
     def compute_operation(self):
 
         # Se l'indice si trova sotto al polso, allora cambio modalità
@@ -511,7 +513,7 @@ def setup():
         sat.addStreamingChannel(
             Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureManualChanName)
         sat.addStreamingChannel(
-            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureModeChanName)
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, gestureModeChanName, props={"mode": controller._current_mode.value})
 
     return ok
 
@@ -574,8 +576,12 @@ def onChannelAdded(ch: FlowChannel):
         print("Channel ADDED: {}".format(ch.name))
         gestureModeChan = ch               
         print("Current mode: ", controller._current_mode.value)
-        data = struct.pack("<b", controller._current_mode.value)
-        sat.publish(gestureModeChan.chanID, data)        
+        
+        
+        sat.setCurrentDbName(gestureModeChan.name)
+        sat.setVariable("mode", controller._current_mode.value)
+        sat.setCurrentDbName(sat._userName)
+   
         
     elif (ch.name == f"guest.{gestureConfirmChanName}"):
         print("Channel ADDED: {}".format(ch.name))
@@ -598,7 +604,6 @@ def onStartChanPub(ch):
 
 def onStopChanPub(ch):
     print("Publish STOP required: {}".format(ch.name))
-
 
 def onDataGrabbed(chanID, data):
 

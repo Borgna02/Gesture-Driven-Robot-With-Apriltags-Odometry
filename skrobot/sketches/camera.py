@@ -78,7 +78,7 @@ class CameraController:
         # Altezza immagine
         self._height = self._sim.getObjectInt32Param(
             self._camera_handle, self._sim.visionintparam_resolution_y)
-        
+
         print("Res: ", self._width, self._height)
 
         # fov in radianti
@@ -92,8 +92,7 @@ class CameraController:
         cy = self._height / 2
 
         self._intrinsics = (fx, fy, cx, cy)
-    
-        
+
         self._sim.startSimulation()
 
     def read_image(self):
@@ -113,9 +112,7 @@ class CameraController:
         # height, width, channels
         image = np_array.reshape((resolution[1], resolution[0], 3))
         image = cv2.flip(image, 0)
-        
-        
-  
+
         # Converti l'immagine in scala di grigi
         image_bn = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -192,8 +189,15 @@ def setup():
         sat.setSpeedMonitorEnabled(True)
 
         print("[LOOP] ..")
+        props = {
+            "resolution", f"{controller._width}x{controller._height}",
+            "intrinsics", json.dumps(controller._intrinsics),
+            "camera_height", controller._camera_height,
+            "fov", controller._fov
+        }
+
         sat.addStreamingChannel(
-            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, cameraChanName)
+            Flow_T.FT_BLOB, Variant_T.T_BYTEARRAY, cameraChanName, props=props)
 
     return ok
 
@@ -222,15 +226,6 @@ def onChannelAdded(ch: FlowChannel):
     if (ch.name == f"guest.{cameraChanName}"):
         print("Channel ADDED: {}".format(ch.name))
         cameraChan = ch
-
-        # Comunicazione tramite pairDB
-        sat.setCurrentDbName(cameraChan.name)
-        sat.setVariable(
-            "resolution", f"{controller._width}x{controller._height}")
-        sat.setVariable("intrinsics", json.dumps(controller._intrinsics))
-        sat.setVariable("camera_height", controller._camera_height)
-        sat.setVariable("fov", controller._fov)
-        sat.setCurrentDbName(sat._userName)  # Reimposto al DB di default
 
 
 def onChannelRemoved(ch):
