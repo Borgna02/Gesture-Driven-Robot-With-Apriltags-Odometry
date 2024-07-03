@@ -181,7 +181,7 @@ class Controller:
 
         # pubblicazione del messaggio solo se la nuova azione è diversa da quella attuale
         if (self._last_action != command and actionChan):
-            print("Azione eseguita: " + command.name, flush=True)
+            # print("Azione eseguita: " + command.name, flush=True)
             sat.publishInt8(actionChan.chanID, command.value)
             self._last_action = command
 
@@ -311,14 +311,12 @@ class Controller:
             self.exec_command(Command.STOP)
 
         else:
-            print(self._my_pos)
             if(self._my_pos == (None, None)):
                 # Controllo qual è l'ultimo comando che stavo eseguendo
                 command = self._last_command
                 if (self._last_avoiding_command != ""):
                     command = self._last_avoiding_command
 
-                print("QUa")
                 if (self._reached):
                     self.exec_command(Command.STOP)
                 # Se l'ultimo comando è verso destra, ruoto lentamente verso destra
@@ -438,7 +436,7 @@ def loop():
     
 
     if (controller._mode == Mode.AUTO and controller._last_received_auto_cmnd):
-        print("Auto command received: ", controller._last_received_auto_cmnd)
+        # print("Auto command received: ", controller._last_received_auto_cmnd)
         controller.handle_auto_cmnd(controller._last_received_auto_cmnd)
 
     sat.tick()
@@ -474,7 +472,7 @@ def onChannelAdded(ch: FlowChannel):
         
         sync = sat.newSyncClient()
         sync.setCurrentDbName(gestureModeChan.name)
-        print("Var", sync.getVariable("mode"))
+        # print("Var", sync.getVariable("mode"))
         controller._mode = Mode(int(sync.getVariable("mode")))
         sync.close()
 
@@ -519,7 +517,7 @@ def onDataGrabbed(chanID, data):
     if (gestureModeChan and chanID == gestureModeChan.chanID):
         data, = struct.unpack('<b', data)
         controller.change_mode(data)
-        print("Modalità cambiata in " + str(controller._mode.name))
+        # print("Modalità cambiata in " + str(controller._mode.name))
 
     elif (gestureManualChan and chanID == gestureManualChan.chanID):
         data, = struct.unpack('<b', data)

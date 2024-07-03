@@ -234,7 +234,7 @@ class GestureController:
             self._mean_counter = 0
             self._mean_pos = Command.STOP
 
-        print("Changing Mode in " + self._current_mode.name)
+        # print("Changing Mode in " + self._current_mode.name)
        
         
         data = struct.pack("<b", self._current_mode.value)
@@ -339,7 +339,7 @@ class GestureController:
     def publish_manual_operation(self, operation: Command):
         # Invio l'operazione solo se è diversa da quella precedente
         if (self._last_operation != operation):
-            print("New operation: " + str(operation))
+            # print("New operation: " + str(operation))
             sat.publishInt8(gestureManualChan.chanID,
                             operation.value)
             self._last_operation = operation
@@ -353,7 +353,6 @@ class GestureController:
         
         # Se l'operazione è STOP invio il suo valore numerico, altrimenti inv
         if (current_operation != self._last_operation):
-            print("QUa")
             operation_code = current_operation.value if current_operation == Command.STOP else current_operation
             sat.sendServiceRequest(
                 serviceAuto.chanID, "cmndAuto", operation_code)

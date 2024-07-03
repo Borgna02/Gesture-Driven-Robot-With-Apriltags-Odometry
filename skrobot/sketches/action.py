@@ -85,7 +85,7 @@ class Controller:
             case _:
                 raise Exception(f"Unknown command {command}")
 
-        print("Azione eseguita: " + command.name, flush=True)
+        # print("Azione eseguita: " + command.name, flush=True)
 
 ###############################################################################
 # SKETCH
@@ -171,7 +171,6 @@ def onDataGrabbed(chanID, data):
         # Per vedere come decodificare il messaggio andare in socketdevice.py
               
         val, = struct.unpack('<b', data)
-        print(val)
         controller.do_action(Command(val))
    
 ###############################################################################

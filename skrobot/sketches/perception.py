@@ -209,7 +209,7 @@ def onDataGrabbed(chanID, data):
 
         if (perceptionChan and controller._old_perceptions != new_perceptions):
 
-            print(new_perceptions)
+            # print(new_perceptions)
             bits = [1 if val == True else 0 for val in new_perceptions.values()]
 
             byte = 0

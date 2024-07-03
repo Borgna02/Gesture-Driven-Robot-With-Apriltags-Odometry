@@ -190,10 +190,10 @@ def setup():
 
         print("[LOOP] ..")
         props = {
-            "resolution", f"{controller._width}x{controller._height}",
-            "intrinsics", json.dumps(controller._intrinsics),
-            "camera_height", controller._camera_height,
-            "fov", controller._fov
+            "resolution": f"{controller._width}x{controller._height}",
+            "intrinsics": json.dumps(controller._intrinsics),
+            "camera_height": controller._camera_height,
+            "fov": controller._fov
         }
 
         sat.addStreamingChannel(
