@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-df = pd.read_csv('../position_data_2.csv')  
+df = pd.read_csv('../position_errors.csv')  
 
 print(f"Errore medio: {df['error'].mean()}, Errore minimo: {df['error'].min()}, Errore massimo: {df['error'].max()}")
 

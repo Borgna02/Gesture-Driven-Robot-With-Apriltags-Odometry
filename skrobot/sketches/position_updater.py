@@ -156,13 +156,6 @@ class TagHandler:
         Rx, Ry = self.calculate_point_behind(Cx, Cy, yaw, ROBOT_RADIUS)
 
         self._my_pos = (Rx, Ry)
-
-        # Salvo i dati sulla posizione all'interno di un csv
-        with open('position_data_2.csv', mode='a') as file:
-            writer = csv.writer(file)
-            writer.writerow([*self._my_pos, self._my_orientation, *self._real_pos,
-                            self._real_orientation, phi, math.dist(self._my_pos, self._real_pos)])
-            
             
         return *self._my_pos, self._my_orientation, *self._real_pos, self._real_orientation
 
