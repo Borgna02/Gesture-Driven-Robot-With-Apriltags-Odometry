@@ -15,5 +15,5 @@ directory_programmi="."
 
 # Ciclo attraverso l'array dei programmi Python
 for programma in "${programmi_python[@]}"; do
-    osascript -e "tell application \"Terminal\" to do script \"cd $directory_programmi; python3 ./$programma; exec zsh\""
+    open -a Terminal "$directory_programmi/$programma"
 done
