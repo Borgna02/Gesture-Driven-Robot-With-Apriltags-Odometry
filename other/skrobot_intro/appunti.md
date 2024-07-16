@@ -27,7 +27,7 @@
 10. Chiudere e riaprire il terminale
 11. ```sudo -s```
 12. ```pck --install SkRobot```
-13. Selezionare 2 => cuda
+13. Selezionare 1 => nocuda
 
     ![alt text](image.png)
 

@@ -276,7 +276,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
-    sat.setAppName("Random direction")
+    sat.setNodeName("Random direction")
 
     t = TICK_LEN
     sat.setTickTimer(t, t * 20)  # Intervallo di check

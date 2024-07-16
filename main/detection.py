@@ -309,7 +309,7 @@ def setup():
     os.remove('modello.pkl')
 
     sat.setLogin(args.user, args.password)
-    sat.setAppName("Detection")
+    sat.setNodeName("Detection")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)

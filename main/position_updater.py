@@ -205,7 +205,7 @@ def setup():
     print("Connected to SIM")
 
     sat.setLogin(args.user, args.password)
-    sat.setAppName("Position Updater")
+    sat.setNodeName("Position Updater")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)

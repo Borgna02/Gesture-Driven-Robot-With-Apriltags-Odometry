@@ -111,7 +111,7 @@ def setup():
     args = parser.parse_args()
 
     sat.setLogin(args.user, args.password)
-    sat.setAppName("Sense")
+    sat.setNodeName("Sense")
 
     t = TICK_LEN  # seconds
     sat.setTickTimer(t, t * 50)
