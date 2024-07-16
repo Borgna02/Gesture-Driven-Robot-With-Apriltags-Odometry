@@ -1,0 +1,128 @@
+[
+    {
+        "type" : "Container",
+        "title" : "CPU time stat",
+        "id" : "ROBOT_CPU_CHART",
+        "html" : 
+        {
+            "template" : "chartjs/chart-container.html",
+            "defaultsForVariables":
+            {
+                "ATTRIBUTES" : "style='min-width:100%; min-height:40vh'"
+            }
+        },
+        "init" :
+        {
+            "template" : "chartjs/init-line-livechart.js",
+            "defaultsForVariables" :
+            {
+                "SAMPLES_LIMIT" : "200",
+                "UDM" : "%"
+            }
+        },
+        "tick" :
+        {
+            "interval" : 0.5,
+            "template" : "chartjs/tick-line-livechart.js"
+        },
+        "widgets" :
+        [
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "userTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "User",
+                        "COLOR" : "blue"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "kernelTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Kernel",
+                        "COLOR" : "black"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "ioTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "IO",
+                        "COLOR" : "red"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "swapTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Swap",
+                        "COLOR" : "orange"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "niceTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Nice",
+                        "COLOR" : "magenta"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "idleTime",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Idle",
+                        "COLOR" : "cyan"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            }
+        ]
+    }
+]

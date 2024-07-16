@@ -1,0 +1,83 @@
+{
+    "widgets" :
+    [
+        {
+            "type" : "Container",
+            "html" :
+            {
+                "template" : "container.html",
+                "defaultsForVariables" :
+                {
+                    "TAG" : "div",
+                    "ATTRIBUTES" : "class='row'"
+                }
+            },
+            "widgets" :
+            [
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-3'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Container",
+                            "html" :
+                            {
+                                "template" : "components/image.html",
+                                "defaultsForVariables" : {"SRC" : "/$$appName$$/VideoSource.JPeg.multipart"}
+                            }
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "VideoSource",
+                            "key" : "changeRunningState_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "VideoSource",
+                            "key" : "flipFrame_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "VideoSource",
+                            "key" : "toggleMonochromatic_TRANS"
+                        }
+                    ]
+                },
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-9'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Form",
+                            "dbName" : "VideoSource",
+                            "key" : "changeConfig_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "VideoSource",
+                            "key" : "whiteBalancer_TRANS"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

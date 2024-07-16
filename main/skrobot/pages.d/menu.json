@@ -1,0 +1,6 @@
+{
+    "Application" : ["Setup"],
+    "View" : ["System"],
+    "Modules" : ["Camera", "MotionDetect", "FaceDetect", "VideoSource", "AudioCapture", "Spectrogram"],
+    "TestPages" : ["Test"]
+}

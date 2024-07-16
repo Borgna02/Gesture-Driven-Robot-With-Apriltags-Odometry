@@ -1,0 +1,88 @@
+{
+    "widgets" :
+    [
+        {
+            "type" : "Container",
+            "html" :
+            {
+                "template" : "container.html",
+                "defaultsForVariables" :
+                {
+                    "TAG" : "div",
+                    "ATTRIBUTES" : "class='row'"
+                }
+            },
+            "widgets" :
+            [
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-3'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Container",
+                            "html" :
+                            {
+                                "template" : "components/image.html",
+                                "defaultsForVariables" : {"SRC" : "/$$appName$$/Spectrogram.JPeg.multipart"}
+                            }
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "changeRunningState_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "setFalseColorsMap_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "flipFrame_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "toggleMonochromatic_TRANS"
+                        }
+                    ]
+                },
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-9'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "changeConfig_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "Spectrogram",
+                            "key" : "whiteBalancer_TRANS"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

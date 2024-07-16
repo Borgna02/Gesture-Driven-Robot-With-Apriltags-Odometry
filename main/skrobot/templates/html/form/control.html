@@ -1,0 +1,36 @@
+<div class="card mb-3">
+    <div class="card-body">
+        <form id="$$ID$$" class="$$OPT_CLASSES$$">
+
+            <fieldset>
+                <legend><strong>$$TITLE$$</strong></legend>
+                <p class="form-text">$$DESC$$</p>
+            </fieldset>
+
+            <input type="hidden" value="$$OWNER_TYPE$$" id="OWNER_TYPE" name="OWNER_TYPE">
+            <input type="hidden" value="$$OWNER_NAME$$" id="OWNER_NAME" name="OWNER_NAME">
+            <input type="hidden" value="$$OWNER_SLOT$$" id="OWNER_SLOT" name="OWNER_SLOT">
+
+            $#CONTENT#$
+
+        </form>
+
+        <hr>
+
+        <div id="$$ID$$_RETMSG">
+        </div>
+    </div>
+</div>
+
+$%$
+
+{
+    "defaultsForVariables" : {
+        "ID" : "",
+        "OWNER_TYPE" : "",
+        "OWNER_NAME" : "",
+        "OWNER_SLOT" : "",
+        "DESC" : "",
+        "OPT_CLASSES" : ""
+    }
+}

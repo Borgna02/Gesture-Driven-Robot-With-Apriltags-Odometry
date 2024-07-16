@@ -1,0 +1,112 @@
+[
+    {
+        "type" : "Container",
+        "title" : "Memory stat",
+        "id" : "ROBOT_MEMORY_CHART",
+        "html" : 
+        {
+            "template" : "chartjs/chart-container.html",
+            "defaultsForVariables":
+            {
+                "ATTRIBUTES" : "style='min-width:100%; min-height:40vh'"
+            }
+        },
+        "init" :
+        {
+            "template" : "chartjs/init-line-livechart.js",
+            "defaultsForVariables" :
+            {
+                "SAMPLES_LIMIT" : "200",
+                "UDM" : "GB"
+            }
+        },
+        "tick" :
+        {
+            "interval" : 0.5,
+            "template" : "chartjs/tick-line-livechart.js"
+        },
+        "widgets" :
+        [
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "ramUsed",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Used",
+                        "COLOR" : "red"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "ramCache",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Cache",
+                        "COLOR" : "orange"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "ramFree",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Free",
+                        "COLOR" : "blue"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "swapUsed",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Used swap",
+                        "COLOR" : "magenta"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "swapFree",
+                "init" :
+                {
+                    "template" : "chartjs/init-line-livechart-val.js",
+                    "defaultsForVariables" :
+                    {
+                        "LABEL" : "Free swap",
+                        "COLOR" : "brown"
+                    }
+                },
+                "run" : {"template" : "chartjs/run-line-livechart-val.js"}
+            }
+        ]
+    }
+]

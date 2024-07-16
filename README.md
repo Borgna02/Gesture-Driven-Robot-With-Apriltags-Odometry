@@ -5,5 +5,5 @@ Requisiti del progetto:
 
 Per eseguire il programma:
 1. Aprire CoppeliaSim ed eseguire la scena ```PioneerScene.ttt```
-2. Lanciare SkRobot
+2. Lanciare SkRobot eseguendo il comando ```skrobot`` all'interno della cartella skrobot/launch
 3. Spostarsi nella directory main ed eseguire ```launch.sh```

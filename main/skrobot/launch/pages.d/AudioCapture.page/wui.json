@@ -1,0 +1,80 @@
+{
+    "widgets" :
+    [
+        {
+            "type" : "Container",
+            "html" :
+            {
+                "template" : "container.html",
+                "defaultsForVariables" :
+                {
+                    "TAG" : "div",
+                    "ATTRIBUTES" : "class='row'"
+                }
+            },
+            "widgets" :
+            [
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-3'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "setMute_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "setGain_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "setBass_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "setMiddle_TRANS"
+                        },
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "setTreble_TRANS"
+                        }
+                    ]
+                },
+                {
+                    "type" : "Container",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-9'"
+                        }
+                    },
+                    "widgets" :
+                    [
+                        {
+                            "type" : "Form",
+                            "dbName" : "AudioCapture",
+                            "key" : "changeConfig_TRANS"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

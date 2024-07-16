@@ -1,0 +1,195 @@
+[
+    {
+        "type" : "Container",
+        "title" : "Tick intervals average",
+        "html" : 
+        {
+            "template" : "components/pair-list.html"
+        },
+        "widgets" :
+        [
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Http",
+                "key" : "tickAvg",
+                "label" : "Http",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Main",
+                "key" : "tickAvg",
+                "label" : "$$appName$$",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Speaker",
+                "key" : "tickAvg",
+                "label" : "Speaker",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Camera",
+                "key" : "tickAvg",
+                "label" : "Camera",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "VideoSource",
+                "key" : "tickAvg",
+                "label" : "VideoSource",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "MotionDetect",
+                "key" : "tickAvg",
+                "label" : "MotionDetect",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "CodeDetect",
+                "key" : "tickAvg",
+                "label" : "CodeDetect",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "FaceDetect",
+                "key" : "tickAvg",
+                "label" : "FaceDetect",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "FaceRecognize",
+                "key" : "tickAvg",
+                "label" : "FaceRecognize",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "AudioCapture",
+                "key" : "tickAvg",
+                "label" : "AudioCapture",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "OgaEncoder",
+                "key" : "tickAvg",
+                "label" : "OgaEncoder",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "Spectrogram",
+                "key" : "tickAvg",
+                "label" : "Spectrogram",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            },
+            {
+                "type" : "Widget",
+                "mode" : "Value",
+                "dbName" : "ThermoCap",
+                "key" : "tickAvg",
+                "label" : "ThermoCap",
+                "udm" : "msec",
+                "html" :
+                {
+                    "template" : "components/pair-list-item.html",
+                    "defaultsForVariables" : {"OPT_CLASSES_VALUE" : "text-end"}
+                },
+                "run" : {"template" : "jquery/element-set-value.js"}
+            }
+        ]
+    }
+]

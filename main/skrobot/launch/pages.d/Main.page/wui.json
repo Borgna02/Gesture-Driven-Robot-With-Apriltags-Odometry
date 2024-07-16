@@ -1,0 +1,58 @@
+{
+    "widgets" :
+    [
+        {
+            "type" : "Pairs",
+            "dbName" : "Main",
+            "key" : "tickAvgs",
+            "udm" : "msec"
+        },
+        {
+            "type" : "Container",
+            "title" : "Tick times average",
+            "id" : "TICKAVG_ROW",
+            "html" :
+            {
+                "template" : "container.html",
+                "defaultsForVariables" :
+                {
+                    "TAG" : "div",
+                    "ATTRIBUTES" : "class='row'"
+                }
+            },
+            "widgets" :
+            [
+                {
+                    "type" : "Container",
+                    "title" : "Values",
+                    "id" : "TICKAVG_PAIRS_COL",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-3'"
+                        }
+                    },
+                    "widgetsFilePath" : "tickAvgPairs.json"
+                },
+                {
+                    "type" : "Container",
+                    "title" : "Charts",
+                    "id" : "TICKAVG_CHART_COL",
+                    "html" :
+                    {
+                        "template" : "container.html",
+                        "defaultsForVariables" :
+                        {
+                            "TAG" : "div",
+                            "ATTRIBUTES" : "class='col-md-9'"
+                        }
+                    },
+                    "widgetsFilePath" : "tickAvgChart.json"
+                }
+            ]
+        }
+    ]
+}
