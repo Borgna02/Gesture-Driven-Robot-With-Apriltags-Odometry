@@ -462,6 +462,8 @@ def setup():
     global is_from_phone
 
     device = cv2.VideoCapture(0)
+    # Net-camera
+    # device = cv2.VideoCapture("rtsp://admin:Dewsdews1!@192.168.1.100/profile2/media.smp")
 
     if not device.isOpened():
         print("CANNOT open the camera [ID: {}]".format(0))
