@@ -63,7 +63,7 @@ class Constants:
     # Rate di refresh della camera
     CAM_REFRESH_TIME = 0.05
     # Dimensioni della finestra con la webcam
-    WINDOW_WIDTH = 500
+    WINDOW_WIDTH = 800
 
 
 class MathUtils:
@@ -379,17 +379,17 @@ class ImageUtils:
         orient_string += f" ({round(real_orient, 2)})"
         # Scrive la stringa sull'immagine
         cv2.putText(image, string, (50, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
-        cv2.putText(image, mode.name, (image.shape[1] - 150, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 5)
+        cv2.putText(image, mode.name, (image.shape[1] - 200, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0),5)
 
         cv2.rectangle(
-            image, (48, image.shape[0] - 58), (470, image.shape[0] - 15), (255, 255, 255), -1)
+            image, (38, image.shape[0] - 68), (750, image.shape[0] - 5), (255, 255, 255), -1)
 
         cv2.putText(image, pos_string, (50, image.shape[0] - 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
-        cv2.putText(image, orient_string, (50, image.shape[0] - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+        cv2.putText(image, orient_string, (50, image.shape[0] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
     @staticmethod
     def capture_image(device: cv2.VideoCapture, gesture_controller: GestureController, is_from_phone: bool):
