@@ -3,7 +3,8 @@ To execute the project:
 1. Download Docker
 2. Download DroidCam on your phone
 3. Put the WiFi IP showed in the homepage of DroidCam into the ENV VARIABLE `DROIDCAM_URL` into the docker-compose.yml -> gesture service
-4. `docker-compose up --build`
+4. Download CoppeliaSim Edu, rename it in `CoppeliaSim.tar.xz` and put it into the coppeliasim folder.
+5. `docker-compose up --build`
 
 Then
 * To see the simulation on CoppeliaSIM, visit `localhost:6080/vnc.html`
