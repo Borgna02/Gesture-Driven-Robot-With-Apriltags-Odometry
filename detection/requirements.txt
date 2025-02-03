@@ -1,0 +1,6 @@
+git+https://gitlab.com/Tetsuo-tek/PySketch@211f554a9d2812995c2abb5e00b20cd712e19696
+coppeliasim_zmqremoteapi_client==2.0.4
+opencv-python==4.11.0.86
+dt_apriltags==3.1.7
+pandas==2.2.3
+scikit-learn==1.5.0

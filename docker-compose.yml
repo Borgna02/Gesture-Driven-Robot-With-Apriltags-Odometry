@@ -1,0 +1,120 @@
+services:
+  skrobot:
+    build:
+      context: ./skrobot
+    container_name: skrobot
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - PYTHONUNBUFFERED=1 # To force python to print without buffering
+    volumes:
+      - ./skrobot/volume:/app
+
+  sense:
+    build:
+      context: ./sense
+    container_name: sense
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+    
+  percept:
+    build:
+      context: ./percept
+    container_name: percept
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+
+  coppeliasim:
+    build:
+      context: ./coppeliasim
+    container_name: coppeliasim
+    ports:
+      - "6080:6080"
+      - "23000:23000"
+
+  gesture:
+    build:
+      context: ./gesture
+    container_name: gesture
+    environment:
+      - DROIDCAM_URL=http://192.168.1.6:4747/video
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - QT_QPA_PLATFORM=offscreen
+      - VIDEO_OUTPUT_ADDRESS=http://video_output:3000/video
+    depends_on:
+      - video_output
+
+
+  controller:
+    build:
+      context: ./controller
+    container_name: controller
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+
+  video_output:
+    build:
+      context: ./video_output
+    container_name: video_output
+    ports:
+      - "3000:3000"
+      - "3001:3001" 
+    environment:
+      - PORT=3000  
+      - WS_PORT=3001
+
+  action:
+    build:
+      context: ./action
+    container_name: action
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+
+  camera:
+    build:
+      context: ./camera
+    container_name: camera
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+
+  
+  detection:
+    build:
+      context: ./detection
+    container_name: detection
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+      - PROCESSED_VIDEO_OUTPUT_ADDRESS=http://video_output:3000/processed_video
+    
+  position_updater:
+    build:
+      context: ./position_updater
+    container_name: position_updater
+    environment:
+      - TICK_LEN=0.030
+      - ROBOT_ADDRESS=tcp:skrobot
+      - PYTHONUNBUFFERED=1
+      - COPPELIASIM_API=coppeliasim
+
+networks:
+  skrobot-docker:

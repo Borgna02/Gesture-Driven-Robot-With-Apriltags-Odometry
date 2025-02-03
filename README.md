@@ -1,9 +1,10 @@
-Requisiti del progetto: 
-1. Installazione di SkRobot e symlink della cartella all'interno della cartella main del progetto (dovrebbe essere sufficiente quello già presente nella repository poiché viene sempre installato nello stesso percorso, ma qualora fosse diverso allora sostituirlo)
-2. CoppeliaSim 4.6
-3. Installazione delle librerie Python all'interno del requirements.txt
+To execute the project:
 
-Per eseguire il programma:
-1. Aprire CoppeliaSim ed eseguire la scena ```PioneerScene.ttt```
-2. Lanciare SkRobot eseguendo il comando ```skrobot`` all'interno della cartella skrobot/launch
-3. Spostarsi nella directory main ed eseguire ```launch.sh```
+1. Download Docker
+2. Download DroidCam on your phone
+3. Put the WiFi IP showed in the homepage of DroidCam into the ENV VARIABLE `DROIDCAM_URL` into the docker-compose.yml -> gesture service
+4. `docker-compose up --build`
+
+Then
+* To see the simulation on CoppeliaSIM, visit `localhost:6080/vnc.html`
+* To see the images of the gesture and apriltag detection, visit `localhost:3000`

@@ -1,0 +1,3 @@
+git+https://gitlab.com/Tetsuo-tek/PySketch@211f554a9d2812995c2abb5e00b20cd712e19696
+coppeliasim_zmqremoteapi_client==2.0.4
+numpy==2.2.2

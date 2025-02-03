@@ -1,0 +1,1 @@
+TICK_LEN = 0.030 # seconds

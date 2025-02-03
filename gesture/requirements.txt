@@ -1,0 +1,4 @@
+opencv-python==4.11.0.86
+git+https://gitlab.com/Tetsuo-tek/PySketch@211f554a9d2812995c2abb5e00b20cd712e19696
+mediapipe==0.10.20
+requests==2.32.3
